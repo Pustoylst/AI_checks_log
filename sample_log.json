@@ -1,0 +1,6 @@
+{
+  "timestamp": "2026-10-20T12:00:00Z",
+  "level": "ERROR",
+  "message": "Directum request failed with timeout",
+  "file": "app/agent.py"
+}

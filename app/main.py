@@ -1,4 +1,4 @@
-"""Application entry point placeholder for the next implementation stage."""
+"""Application entry point for configuration checks."""
 
 from app.config import get_settings
 
