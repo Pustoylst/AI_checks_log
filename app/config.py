@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     github_api_url: str = "https://api.github.com"
     github_default_branch: str = "main"
     ci_poll_interval_seconds: int = 60
+    ci_state_dir: str = "../agent-ci-runtime"
 
     model_config = SettingsConfigDict(
         env_file=".env",

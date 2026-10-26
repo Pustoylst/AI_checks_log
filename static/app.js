@@ -13,6 +13,7 @@ const proposalExplanation = document.querySelector("#proposal-explanation");
 const proposalPath = document.querySelector("#proposal-path");
 const oldText = document.querySelector("#old-text");
 const newText = document.querySelector("#new-text");
+const prDescription = document.querySelector("#pr-description");
 const fixMessage = document.querySelector("#fix-message");
 const repoStatusButton = document.querySelector("#repo-status-button");
 const ciScanButton = document.querySelector("#ci-scan-button");
@@ -29,6 +30,8 @@ function showProposal(payload) {
   proposalPath.textContent = `Файл: ${payload.path}`;
   oldText.textContent = payload.old_text;
   newText.textContent = payload.new_text;
+  prDescription.value = payload.description || "Описание будет сформировано при создании Pull Request.";
+  document.querySelector("#pr-title").value = `fix: ${payload.path}`;
   proposalPanel.hidden = false;
   resultPanel.hidden = false;
   proposalPanel.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -195,6 +198,7 @@ prButton.addEventListener("click", async () => {
         approved: true,
         base_branch: "main",
         title: document.querySelector("#pr-title").value,
+        description: prDescription.value,
       }),
     });
     const payload = await response.json();
@@ -202,6 +206,7 @@ prButton.addEventListener("click", async () => {
     fixMessage.innerHTML = `Pull Request создан: <a href="${payload.url}" target="_blank" rel="noreferrer">#${payload.number}</a>`;
   } catch (error) {
     fixMessage.textContent = error.message;
+    fixMessage.scrollIntoView({ behavior: "smooth", block: "center" });
   } finally {
     prButton.disabled = false;
     prButton.firstChild.textContent = "Создать Pull Request ";

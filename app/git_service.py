@@ -6,6 +6,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
+from uuid import uuid4
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -73,6 +74,8 @@ def create_pull_request(
     title: str,
     run_id: int | None,
     approved: bool,
+    analysis: str | None = None,
+    description: str | None = None,
 ) -> dict[str, str | int]:
     """Apply a proposal in an isolated branch and open a GitHub Pull Request."""
 
@@ -84,7 +87,10 @@ def create_pull_request(
         raise ValueError("Нужны base_branch и title")
 
     repository = normalize_github_repository(settings.github_repository)
-    branch_name = f"agent/fix-{run_id or 'manual'}-{datetime.now():%Y%m%d%H%M%S}"
+    effective_title = title.strip()
+    if effective_title == "fix: apply agent proposal":
+        effective_title = build_pull_request_title(path, explanation)
+    branch_name = f"agent/fix-{run_id or 'manual'}-{datetime.now():%Y%m%d%H%M%S}-{uuid4().hex[:8]}"
     repo_path = Path(repo_root).resolve()
 
     with tempfile.TemporaryDirectory(prefix="directum-agent-") as worktree:
@@ -95,7 +101,7 @@ def create_pull_request(
             _run_git(worktree, "add", "--", path)
             _run_git(worktree, "config", "user.email", "directum-agent@users.noreply.github.com")
             _run_git(worktree, "config", "user.name", "Directum Agent")
-            commit_message = title.strip()
+            commit_message = effective_title
             _run_git(worktree, "commit", "-m", commit_message)
             _run_git(worktree, "push", "-u", "origin", branch_name)
         finally:
@@ -104,20 +110,62 @@ def create_pull_request(
             except GitOperationError:
                 pass
 
-    body = (
-        "## Анализ Directum Agent\n\n"
+    body = description.strip() if description and description.strip() else build_pull_request_body(
+        path=path,
+        explanation=explanation,
+        old_text=old_text,
+        new_text=new_text,
+        run_id=run_id,
+        analysis=analysis,
+    )
+    return _create_github_pull_request(settings, repository, effective_title, body, branch_name, base_branch)
+
+
+def build_pull_request_title(path: str, explanation: str) -> str:
+    """Build a short title; detailed reasoning belongs in the PR body."""
+
+    return f"fix: {path}"
+
+
+def build_pull_request_body(
+    path: str,
+    explanation: str,
+    old_text: str,
+    new_text: str,
+    run_id: int | None = None,
+    analysis: str | None = None,
+) -> str:
+    """Build a detailed, reviewer-friendly Pull Request description."""
+
+    ci_section = f"- Workflow run: `{run_id}`\n" if run_id is not None else ""
+    analysis_section = f"### Полный анализ CI\n\n{analysis.strip()}\n\n" if analysis and analysis.strip() else ""
+    return (
+        "## Что произошло\n\n"
+        "Агент проанализировал ошибку CI и подготовил исправление после явного "
+        "подтверждения пользователя.\n\n"
+        "## Причина проблемы\n\n"
         f"{explanation.strip()}\n\n"
-        "### Изменение\n"
-        f"Файл: `{path}`\n\n"
+        "## Доказательства\n\n"
+        f"- Затронутый файл: `{path}`\n"
+        f"{ci_section}"
+        "- Исправление основано на точном фрагменте исходного кода, прочитанном из репозитория.\n\n"
+        f"{analysis_section}"
+        "## Что изменено\n\n"
+        "Заменён следующий фрагмент:\n\n"
         "```diff\n"
-        f"- {old_text}\n+"
+        f"- {old_text}\n"
         f"+ {new_text}\n"
         "```\n\n"
-        "Изменение создано только после явного подтверждения пользователя."
+        "## Почему это должно помочь\n\n"
+        "Новая реализация устраняет несоответствие между поведением кода и "
+        "ожиданиями, зафиксированными в CI-тестах. Изменение ограничено указанным "
+        "фрагментом и не затрагивает остальные файлы.\n\n"
+        "## Проверка\n\n"
+        "После создания Pull Request необходимо повторно запустить CI и убедиться, "
+        "что упавшие проверки проходят.\n\n"
+        "## Откат\n\n"
+        "Изменение можно откатить стандартным revert этого Pull Request."
     )
-    if run_id is not None:
-        body = f"CI workflow run: {run_id}\n\n" + body
-    return _create_github_pull_request(settings, repository, title.strip(), body, branch_name, base_branch)
 
 
 def _create_github_pull_request(
@@ -141,7 +189,17 @@ def _create_github_pull_request(
     try:
         with urlopen(request, timeout=30) as response:
             result = json.load(response)
-    except (HTTPError, URLError, TimeoutError) as error:
+    except HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")
+        if error.code == 403:
+            detail = (
+                "GitHub отклонил создание Pull Request (403). "
+                "Для GITHUB_TOKEN нужны права Pull requests: Read and write, "
+                "Contents: Read and write и Actions: Read для этого репозитория. "
+                f"Ответ GitHub: {detail}"
+            )
+        raise GitOperationError(f"Не удалось создать Pull Request (HTTP {error.code}): {detail}") from error
+    except (URLError, TimeoutError) as error:
         raise GitOperationError(f"Не удалось создать Pull Request: {error}") from error
     return {"number": result.get("number", 0), "url": result.get("html_url", ""), "branch": head}
 

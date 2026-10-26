@@ -11,7 +11,13 @@ from pydantic import ValidationError
 from app.agent import analyze_log, propose_fix
 from app.ci_watcher import _run_logs, mark_fix_proposed, scan_failed_runs
 from app.fixes import apply_approved_fix
-from app.git_service import GitOperationError, create_pull_request, github_checks, repository_status
+from app.git_service import (
+    GitOperationError,
+    build_pull_request_body,
+    create_pull_request,
+    github_checks,
+    repository_status,
+)
 from app.schemas import ApplyFixRequest, ApplyFixResponse, AnalyzeResponse, FixProposal, LogPayload, PullRequestRequest
 
 app = FastAPI(title="Directum Log Analyzer", version="0.1.0")
@@ -63,7 +69,14 @@ def ci_scan_endpoint(repo: str = Query(...)) -> dict[str, object]:
     try:
         from app.config import get_settings
 
-        results = scan_failed_runs(get_settings(), repo, Path(repo) / ".ci-watcher-state.json")
+        state_dir = Path(get_settings().ci_state_dir).expanduser().resolve()
+        repo_key = Path(repo).resolve().name
+        results = scan_failed_runs(
+            get_settings(),
+            repo,
+            state_dir / f"{repo_key}-processed.json",
+            proposed_state_path=state_dir / f"{repo_key}-proposed.json",
+        )
         return {"results": results, "count": len(results)}
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
@@ -80,8 +93,21 @@ def ci_propose_fix_endpoint(run_id: int = Query(...), repo: str = Query(...)) ->
 
         settings = get_settings()
         logs = _run_logs(settings, run_id)
-        proposal = propose_fix({"run_id": run_id, "ci_logs": logs}, Path(repo))
-        mark_fix_proposed(repo, run_id)
+        log_data = {"run_id": run_id, "ci_logs": logs}
+        analysis = analyze_log(log_data, repo_root=Path(repo), settings=settings)
+        proposal = propose_fix(log_data, Path(repo), settings=settings)
+        proposal.analysis = analysis
+        proposal.run_id = run_id
+        proposal.description = build_pull_request_body(
+            proposal.path,
+            proposal.explanation,
+            proposal.old_text,
+            proposal.new_text,
+            proposal.run_id,
+            proposal.analysis,
+        )
+        state_dir = Path(settings.ci_state_dir).expanduser().resolve()
+        mark_fix_proposed(repo, run_id, state_dir / f"{Path(repo).resolve().name}-proposed.json")
         return proposal
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
@@ -109,6 +135,8 @@ def pull_request_endpoint(request: PullRequestRequest, repo: str = Query(...)) -
             request.title,
             request.run_id,
             request.approved,
+            request.analysis,
+            request.description,
         )
     except PermissionError as error:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from None
@@ -166,7 +194,17 @@ async def propose_fix_endpoint(
     except (json.JSONDecodeError, UnicodeDecodeError, ValidationError):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Нужен корректный JSON-лог") from None
     try:
-        return propose_fix(payload.model_dump(exclude_none=True), Path(repo))
+        from app.config import get_settings
+
+        settings = get_settings()
+        log_data = payload.model_dump(exclude_none=True)
+        analysis = analyze_log(log_data, repo_root=Path(repo), settings=settings)
+        proposal = propose_fix(log_data, Path(repo), settings=settings)
+        proposal.analysis = analysis
+        proposal.description = build_pull_request_body(
+            proposal.path, proposal.explanation, proposal.old_text, proposal.new_text, analysis=proposal.analysis
+        )
+        return proposal
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Не удалось подготовить исправление: {error}") from None
 

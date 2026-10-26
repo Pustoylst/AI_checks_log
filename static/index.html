@@ -80,12 +80,14 @@
             <div><span class="diff-label removed">Было</span><pre id="old-text"></pre></div>
             <div><span class="diff-label added">Станет</span><pre id="new-text"></pre></div>
           </div>
+          <label class="field-label" for="pr-description">Описание Pull Request</label>
+          <textarea id="pr-description" class="description-preview" readonly></textarea>
           <button id="apply-button" class="submit-button" type="button">Применить изменение <span class="button-arrow">✓</span></button>
           <p class="approval-note">Изменение не будет применено без вашего нажатия. Перед записью создаётся резервная копия.</p>
           <div id="git-actions" class="git-actions" hidden>
             <p class="section-kicker">04 / Git</p>
             <label class="field-label" for="pr-title">Заголовок Pull Request</label>
-            <div class="repo-field"><input id="pr-title" type="text" value="fix: apply agent proposal"></div>
+            <div class="repo-field"><input id="pr-title" type="text" value=""></div>
             <button id="pr-button" class="submit-button" type="button">Создать Pull Request <span class="button-arrow">↗</span></button>
             <p class="approval-note">Агент создаст отдельную ветку, commit, push и Pull Request. Merge выполняется после проверки PR на GitHub.</p>
           </div>

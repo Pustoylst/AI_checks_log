@@ -37,6 +37,9 @@ class FixProposal(BaseModel):
     explanation: str
     old_text: str
     new_text: str
+    analysis: str | None = None
+    run_id: int | None = None
+    description: str | None = None
 
 
 class ApplyFixRequest(FixProposal):
@@ -61,6 +64,8 @@ class PullRequestRequest(BaseModel):
     explanation: str
     old_text: str
     new_text: str
+    analysis: str | None = None
+    description: str | None = None
     base_branch: str = "main"
     title: str = "fix: apply agent proposal"
     run_id: int | None = None

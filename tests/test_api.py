@@ -108,7 +108,10 @@ def test_pull_request_endpoint_requires_approval(tmp_path) -> None:
 
 
 def test_ci_scan_returns_new_failures(monkeypatch, tmp_path) -> None:
-    monkeypatch.setattr("app.api.scan_failed_runs", lambda settings, repo, state: [{"run_id": 7}])
+    monkeypatch.setattr(
+        "app.api.scan_failed_runs",
+        lambda settings, repo, state, proposed_state_path=None: [{"run_id": 7}],
+    )
 
     response = client.post("/ci/scan", params={"repo": str(tmp_path)})
 
@@ -120,9 +123,10 @@ def test_ci_propose_fix_uses_workflow_logs(monkeypatch, tmp_path) -> None:
     from app.schemas import FixProposal
 
     monkeypatch.setattr("app.api._run_logs", lambda settings, run_id: "AssertionError")
+    monkeypatch.setattr("app.api.analyze_log", lambda log_data, repo_root, settings: "Полный CI-анализ")
     monkeypatch.setattr(
         "app.api.propose_fix",
-        lambda log_data, repo_root: FixProposal(
+        lambda log_data, repo_root, settings: FixProposal(
             path="service.py", explanation="Исправить тест", old_text="old", new_text="new"
         ),
     )
@@ -137,13 +141,14 @@ def test_propose_fix_returns_reviewable_proposal(monkeypatch, tmp_path) -> None:
 
     monkeypatch.setattr(
         "app.api.propose_fix",
-        lambda log_data, repo_root: FixProposal(
+            lambda log_data, repo_root, settings: FixProposal(
             path="service.py",
             explanation="Увеличить таймаут",
             old_text="TIMEOUT = 60",
             new_text="TIMEOUT = 120",
         ),
     )
+    monkeypatch.setattr("app.api.analyze_log", lambda log_data, repo_root, settings: "Полный анализ ошибки")
     response = client.post(
         "/propose-fix",
         params={"repo": str(tmp_path)},
@@ -152,3 +157,5 @@ def test_propose_fix_returns_reviewable_proposal(monkeypatch, tmp_path) -> None:
 
     assert response.status_code == 200
     assert response.json()["old_text"] == "TIMEOUT = 60"
+    assert response.json()["description"]
+    assert "Полный анализ ошибки" in response.json()["description"]

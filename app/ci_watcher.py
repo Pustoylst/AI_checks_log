@@ -65,13 +65,13 @@ def _save_state(state_path: Path, run_ids: set[int]) -> None:
     state_path.write_text(json.dumps(sorted(run_ids), ensure_ascii=True), encoding="utf-8")
 
 
-def mark_fix_proposed(repo_root: str | Path, run_id: int) -> None:
+def mark_fix_proposed(repo_root: str | Path, run_id: int, state_path: str | Path | None = None) -> None:
     """Remember that a fix proposal was already requested for one CI run."""
 
-    state_path = Path(repo_root) / ".ci-proposed-runs.json"
-    proposed = _load_state(state_path)
+    proposed_path = Path(state_path) if state_path else Path(repo_root) / ".ci-proposed-runs.json"
+    proposed = _load_state(proposed_path)
     proposed.add(run_id)
-    _save_state(state_path, proposed)
+    _save_state(proposed_path, proposed)
 
 
 def scan_failed_runs(
@@ -79,12 +79,13 @@ def scan_failed_runs(
     repo_root: str | Path,
     state_path: str | Path = ".ci-watcher-state.json",
     analyzer: Callable[..., str] = analyze_log,
+    proposed_state_path: str | Path | None = None,
 ) -> list[dict[str, object]]:
     """Analyze unseen failed runs once; never writes to the Git repository."""
 
     state_file = Path(state_path)
     processed = _load_state(state_file)
-    proposed = _load_state(Path(repo_root) / ".ci-proposed-runs.json")
+    proposed = _load_state(Path(proposed_state_path) if proposed_state_path else Path(repo_root) / ".ci-proposed-runs.json")
     results: list[dict[str, object]] = []
     for run in _failed_runs(settings):
         run_id = int(run["id"])
