@@ -91,24 +91,45 @@ def test_apply_fix_writes_only_approved_exact_change(tmp_path) -> None:
     assert Path(response.json()["backup_path"]).exists()
 
 
-def test_git_commit_endpoint_requires_approval(tmp_path) -> None:
+def test_pull_request_endpoint_requires_approval(tmp_path) -> None:
     response = client.post(
-        "/git/commit-push",
+        "/github/pull-request",
         params={"repo": str(tmp_path)},
-        json={"message": "test", "approved": False},
+        json={
+            "approved": False,
+            "path": "service.py",
+            "explanation": "test",
+            "old_text": "old",
+            "new_text": "new",
+        },
     )
 
     assert response.status_code == 403
 
 
-def test_git_merge_endpoint_requires_approval(tmp_path) -> None:
-    response = client.post(
-        "/git/merge",
-        params={"repo": str(tmp_path)},
-        json={"source_branch": "feature", "target_branch": "main", "approved": False},
-    )
+def test_ci_scan_returns_new_failures(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr("app.api.scan_failed_runs", lambda settings, repo, state: [{"run_id": 7}])
 
-    assert response.status_code == 403
+    response = client.post("/ci/scan", params={"repo": str(tmp_path)})
+
+    assert response.status_code == 200
+    assert response.json() == {"results": [{"run_id": 7}], "count": 1}
+
+
+def test_ci_propose_fix_uses_workflow_logs(monkeypatch, tmp_path) -> None:
+    from app.schemas import FixProposal
+
+    monkeypatch.setattr("app.api._run_logs", lambda settings, run_id: "AssertionError")
+    monkeypatch.setattr(
+        "app.api.propose_fix",
+        lambda log_data, repo_root: FixProposal(
+            path="service.py", explanation="Исправить тест", old_text="old", new_text="new"
+        ),
+    )
+    response = client.post("/ci/propose-fix", params={"run_id": 7, "repo": str(tmp_path)})
+
+    assert response.status_code == 200
+    assert response.json()["path"] == "service.py"
 
 
 def test_propose_fix_returns_reviewable_proposal(monkeypatch, tmp_path) -> None:

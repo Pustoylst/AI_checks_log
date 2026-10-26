@@ -1,7 +1,9 @@
 """GigaChat agent for Directum log analysis."""
 
 from collections.abc import Callable
+import json
 from pathlib import Path
+import re
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
@@ -29,6 +31,19 @@ old_text должен быть точным существующим фрагм�
 Не выдумывай содержимое файла: сначала используй read_git_file.
 Не предлагай изменения, если причина недостаточно подтверждена кодом.
 """
+
+
+def _parse_fix_proposal(response: str) -> FixProposal:
+    """Parse strict JSON or JSON wrapped in a markdown response."""
+
+    candidates = [response.strip()]
+    candidates.extend(re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", response, flags=re.DOTALL))
+    for candidate in candidates:
+        try:
+            return FixProposal.model_validate(json.loads(candidate))
+        except (json.JSONDecodeError, ValueError, TypeError):
+            continue
+    raise ValueError("Агент не вернул корректное предложение исправления в формате JSON")
 
 
 def _create_model(settings: Settings, model_name: str) -> GigaChat:
@@ -129,6 +144,14 @@ def propose_fix(
         response = _invoke_with_tools(fallback, tools, messages, max_iterations)
 
     try:
-        return FixProposal.model_validate_json(response)
+        return _parse_fix_proposal(response)
     except ValueError:
-        raise ValueError("Агент не вернул корректное предложение исправления в формате JSON") from None
+        normalization_prompt = """Преобразуй предыдущий ответ в предложение исправления.
+Верни только один корректный JSON-объект без markdown и без пояснений:
+{"path":"относительный путь","explanation":"краткое объяснение на русском","old_text":"точный фрагмент из файла","new_text":"исправленный фрагмент"}
+Обязательно сначала вызови read_git_file для файла, если точный old_text ещё не подтверждён.
+Если исправление невозможно уверенно определить, верни JSON с пустыми old_text и new_text.
+"""
+        messages.append(HumanMessage(content=normalization_prompt))
+        normalized_response = _invoke_with_tools(model, tools, messages, max_iterations)
+        return _parse_fix_proposal(normalized_response)

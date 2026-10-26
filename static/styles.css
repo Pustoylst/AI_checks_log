@@ -31,6 +31,17 @@ h1 { margin-bottom: 0; font-size: 18px; letter-spacing: -.3px; }
 .intro h2 em { color: #748f26; font-style: italic; }
 .intro-copy { max-width: 420px; margin-bottom: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
 .analysis-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, .75fr); gap: 12px 16px; align-items: end; padding: 24px; background: var(--panel); border: 1px solid var(--line); }
+.control-panel { margin-top: 24px; padding: 24px; border: 1px solid var(--line); background: rgba(255,254,250,.7); }
+.control-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.control-heading h2 { margin: 8px 0 0; font-family: var(--serif); font-size: 30px; font-weight: 400; }
+.control-buttons { display: flex; gap: 8px; }
+.status-output { margin: 20px 0 0; padding: 14px; background: var(--ink); color: var(--accent); font: 12px/1.6 monospace; white-space: pre-wrap; }
+.ci-results { margin-top: 14px; }
+.ci-result { margin-top: 10px; padding: 14px; border-left: 3px solid var(--error); background: var(--panel); }
+.ci-result strong, .ci-result a { display: block; font-size: 12px; }
+.ci-result a { margin-top: 6px; color: var(--accent-dark); }
+.ci-result p { margin: 12px 0 0; white-space: pre-wrap; font-size: 13px; line-height: 1.55; }
+.ci-fix-button { margin-top: 14px; }
 .upload-zone { grid-row: span 2; display: flex; min-height: 180px; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed #aeb9a8; background: #fbfcf5; cursor: pointer; transition: background .2s, border-color .2s; }
 .upload-zone:hover, .upload-zone:focus-within { border-color: var(--accent-dark); background: #f4f9dd; }
 .upload-zone input { position: absolute; width: 1px; height: 1px; opacity: 0; }
@@ -65,6 +76,7 @@ h1 { margin-bottom: 0; font-size: 18px; letter-spacing: -.3px; }
 pre { min-height: 70px; margin: 0; overflow-x: auto; padding: 12px; background: var(--panel); border: 1px solid var(--line); font: 12px/1.5 monospace; white-space: pre-wrap; }
 .approval-note { margin: 12px 0 0; color: var(--muted); font-size: 11px; }
 .proposal-panel.applied { border-color: var(--accent-dark); }
+.git-actions { display: grid; gap: 10px; margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
 .form-message { min-height: 20px; margin: 14px 0 0; color: var(--error); font-size: 13px; }
 footer { display: flex; gap: 10px; margin-top: 72px; color: var(--muted); font-size: 10px; letter-spacing: .8px; text-transform: uppercase; }
 @keyframes reveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -77,5 +89,7 @@ footer { display: flex; gap: 10px; margin-top: 72px; color: var(--muted); font-s
   .upload-zone { grid-row: auto; min-height: 165px; }
   .result-heading { align-items: start; flex-direction: column; }
   .fix-actions, .diff-grid { grid-template-columns: 1fr; flex-direction: column; align-items: stretch; }
+  .control-heading { align-items: stretch; flex-direction: column; }
+  .control-buttons { grid-template-columns: 1fr; flex-direction: column; }
   footer { margin-top: 48px; }
 }

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from app.git_service import commit_and_push, merge_branch, repository_status
+from app.git_service import repository_status
 
 
 def init_repo(path: Path) -> None:
@@ -21,16 +21,3 @@ def test_repository_status_reads_local_git(tmp_path: Path) -> None:
     assert status["branch"] == "main"
     assert "README.md" in status["changes"][0]
 
-
-def test_commit_requires_approval(tmp_path: Path) -> None:
-    init_repo(tmp_path)
-
-    with pytest.raises(PermissionError):
-        commit_and_push(tmp_path, ["README.md"], "test commit", False)
-
-
-def test_merge_requires_approval(tmp_path: Path) -> None:
-    init_repo(tmp_path)
-
-    with pytest.raises(PermissionError):
-        merge_branch(tmp_path, "feature", "main", False)

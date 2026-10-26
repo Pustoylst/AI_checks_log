@@ -2,7 +2,7 @@ from pathlib import Path
 
 from langchain_core.messages import AIMessage
 
-from app.agent import analyze_log, propose_fix
+from app.agent import _parse_fix_proposal, analyze_log, propose_fix
 from app.config import Settings
 
 
@@ -92,3 +92,35 @@ def test_agent_proposes_exact_fix_after_reading_file(tmp_path: Path) -> None:
     assert proposal.old_text == "TIMEOUT = 60"
     assert proposal.new_text == "TIMEOUT = 120"
     assert any("TIMEOUT = 60" in str(message.content) for message in model.seen_messages[1])
+
+
+def test_parse_fix_proposal_accepts_markdown_json() -> None:
+    proposal = _parse_fix_proposal(
+        "Вот предложение:\n```json\n"
+        '{"path":"calculator.py","explanation":"Исправить операцию","old_text":"left + right",'
+        '"new_text":"left - right"}\n```'
+    )
+
+    assert proposal.path == "calculator.py"
+    assert proposal.new_text == "left - right"
+
+
+def test_agent_normalizes_report_into_fix_proposal(tmp_path: Path) -> None:
+    (tmp_path / "calculator.py").write_text("return left + right\n", encoding="utf-8")
+    model = FakeModel(
+        [
+            AIMessage(content="Проблема в операции сложения вместо вычитания."),
+            AIMessage(
+                content='{"path":"calculator.py","explanation":"Исправить операцию","old_text":"return left + right","new_text":"return left - right"}'
+            ),
+        ]
+    )
+
+    proposal = propose_fix(
+        {"message": "tests failed", "file": "calculator.py"},
+        repo_root=tmp_path,
+        settings=Settings(_env_file=None, gigachat_credentials="test"),
+        model_factory=lambda settings, model_name: model,
+    )
+
+    assert proposal.new_text == "return left - right"

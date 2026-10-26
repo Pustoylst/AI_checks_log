@@ -9,10 +9,10 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 from app.agent import analyze_log, propose_fix
+from app.ci_watcher import _run_logs, mark_fix_proposed, scan_failed_runs
 from app.fixes import apply_approved_fix
-from app.git_schemas import GitActionRequest, MergeRequest
-from app.git_service import GitOperationError, commit_and_push, github_checks, merge_branch, repository_status
-from app.schemas import ApplyFixRequest, ApplyFixResponse, AnalyzeResponse, FixProposal, LogPayload
+from app.git_service import GitOperationError, create_pull_request, github_checks, repository_status
+from app.schemas import ApplyFixRequest, ApplyFixResponse, AnalyzeResponse, FixProposal, LogPayload, PullRequestRequest
 
 app = FastAPI(title="Directum Log Analyzer", version="0.1.0")
 app.mount("/static", StaticFiles(directory=Path(__file__).parent.parent / "static"), name="static")
@@ -56,27 +56,65 @@ def ci_checks_endpoint(ref: str | None = Query(default=None)) -> dict[str, objec
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(error)) from None
 
 
-@app.post("/git/commit-push")
-def commit_push_endpoint(request: GitActionRequest, repo: str = Query(...)) -> dict[str, str]:
-    """Commit and push only after explicit approval."""
+@app.post("/ci/scan")
+def ci_scan_endpoint(repo: str = Query(...)) -> dict[str, object]:
+    """Scan new failed GitHub Actions runs once without changing Git files."""
 
     try:
-        return commit_and_push(repo, request.paths, request.message, request.approved)
-    except PermissionError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from None
-    except (ValueError, GitOperationError) as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from None
+        from app.config import get_settings
+
+        results = scan_failed_runs(get_settings(), repo, Path(repo) / ".ci-watcher-state.json")
+        return {"results": results, "count": len(results)}
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
+    except GitOperationError as error:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(error)) from None
 
 
-@app.post("/git/merge")
-def merge_endpoint(request: MergeRequest, repo: str = Query(...)) -> dict[str, str]:
-    """Merge and push only after explicit approval."""
+@app.post("/ci/propose-fix", response_model=FixProposal)
+def ci_propose_fix_endpoint(run_id: int = Query(...), repo: str = Query(...)) -> FixProposal:
+    """Build a code-fix proposal directly from a failed GitHub Actions run."""
 
     try:
-        return merge_branch(repo, request.source_branch, request.target_branch, request.approved)
+        from app.config import get_settings
+
+        settings = get_settings()
+        logs = _run_logs(settings, run_id)
+        proposal = propose_fix({"run_id": run_id, "ci_logs": logs}, Path(repo))
+        mark_fix_proposed(repo, run_id)
+        return proposal
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
+    except GitOperationError as error:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(error)) from None
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Не удалось подготовить исправление: {error}") from None
+
+
+@app.post("/github/pull-request")
+def pull_request_endpoint(request: PullRequestRequest, repo: str = Query(...)) -> dict[str, str | int]:
+    """Create an isolated agent branch, push it and open a Pull Request."""
+
+    try:
+        from app.config import get_settings
+
+        return create_pull_request(
+            repo,
+            get_settings(),
+            request.path,
+            request.explanation,
+            request.old_text,
+            request.new_text,
+            request.base_branch,
+            request.title,
+            request.run_id,
+            request.approved,
+        )
     except PermissionError as error:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from None
-    except (ValueError, GitOperationError) as error:
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
+    except GitOperationError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from None
 
 

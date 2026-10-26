@@ -3,3 +3,5 @@
 __pycache__/
 .pytest_cache/
 *.py[cod]
+.ci-watcher-state.json
+.ci-proposed-runs.json

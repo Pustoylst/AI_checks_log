@@ -51,3 +51,16 @@ class ApplyFixResponse(BaseModel):
     path: str
     backup_path: str
     message: str
+
+
+class PullRequestRequest(BaseModel):
+    """Approved proposal metadata used to create an agent Pull Request."""
+
+    approved: bool = False
+    path: str
+    explanation: str
+    old_text: str
+    new_text: str
+    base_branch: str = "main"
+    title: str = "fix: apply agent proposal"
+    run_id: int | None = None

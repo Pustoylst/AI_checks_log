@@ -43,6 +43,22 @@
         </button>
       </form>
 
+      <section class="control-panel">
+        <div class="control-heading">
+          <div>
+            <p class="section-kicker">01 / Репозиторий</p>
+            <h2>Состояние проекта</h2>
+          </div>
+          <div class="control-buttons">
+            <button id="repo-status-button" class="secondary-button" type="button">Проверить Git</button>
+            <button id="ci-scan-button" class="secondary-button" type="button">Проверить CI</button>
+          </div>
+        </div>
+        <pre id="repo-status" class="status-output" hidden></pre>
+        <p id="ci-message" class="form-message" role="alert"></p>
+        <div id="ci-results" class="ci-results" hidden></div>
+      </section>
+
       <section id="result-panel" class="result-panel" aria-live="polite" hidden>
         <div class="result-heading">
           <div>
@@ -66,6 +82,13 @@
           </div>
           <button id="apply-button" class="submit-button" type="button">Применить изменение <span class="button-arrow">✓</span></button>
           <p class="approval-note">Изменение не будет применено без вашего нажатия. Перед записью создаётся резервная копия.</p>
+          <div id="git-actions" class="git-actions" hidden>
+            <p class="section-kicker">04 / Git</p>
+            <label class="field-label" for="pr-title">Заголовок Pull Request</label>
+            <div class="repo-field"><input id="pr-title" type="text" value="fix: apply agent proposal"></div>
+            <button id="pr-button" class="submit-button" type="button">Создать Pull Request <span class="button-arrow">↗</span></button>
+            <p class="approval-note">Агент создаст отдельную ветку, commit, push и Pull Request. Merge выполняется после проверки PR на GitHub.</p>
+          </div>
         </section>
       </section>
 
