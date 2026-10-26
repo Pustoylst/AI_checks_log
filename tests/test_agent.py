@@ -2,7 +2,7 @@ from pathlib import Path
 
 from langchain_core.messages import AIMessage
 
-from app.agent import analyze_log
+from app.agent import analyze_log, propose_fix
 from app.config import Settings
 
 
@@ -63,3 +63,32 @@ def test_agent_uses_fallback_model_after_primary_failure() -> None:
     )
 
     assert result == "fallback response"
+
+
+def test_agent_proposes_exact_fix_after_reading_file(tmp_path: Path) -> None:
+    (tmp_path / "service.py").write_text("TIMEOUT = 60\n", encoding="utf-8")
+    model = FakeModel(
+        [
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {"name": "read_git_file", "args": {"path": "service.py"}, "id": "call-fix", "type": "tool_call"}
+                ],
+            ),
+            AIMessage(
+                content='{"path":"service.py","explanation":"Увеличить таймаут","old_text":"TIMEOUT = 60","new_text":"TIMEOUT = 120"}'
+            ),
+        ]
+    )
+
+    proposal = propose_fix(
+        {"message": "request timeout", "file": "service.py"},
+        repo_root=tmp_path,
+        settings=Settings(_env_file=None, gigachat_credentials="test"),
+        model_factory=lambda settings, model_name: model,
+    )
+
+    assert proposal.path == "service.py"
+    assert proposal.old_text == "TIMEOUT = 60"
+    assert proposal.new_text == "TIMEOUT = 120"
+    assert any("TIMEOUT = 60" in str(message.content) for message in model.seen_messages[1])

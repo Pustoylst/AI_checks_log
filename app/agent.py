@@ -10,6 +10,7 @@ from langchain_gigachat.chat_models import GigaChat
 
 from app.config import Settings, get_settings
 from app.tools import build_repository_tools
+from app.schemas import FixProposal
 
 SYSTEM_PROMPT = """Ты анализируешь логи приложения Directum.
 Всегда отвечай только на русском языке, даже если лог или названия инструментов на английском.
@@ -18,6 +19,15 @@ SYSTEM_PROMPT = """Ты анализируешь логи приложения D
 Используй результаты инструментов в итоговом ответе и не утверждай, что изучал файлы, которые не читал.
 Если исходники недоступны, анализируй только лог и явно сообщи об этом.
 Структура ответа: Причины, Доказательства, Ссылки на код, Следующие шаги.
+"""
+
+FIX_PROMPT = """Ты готовишь безопасное предложение исправления кода для ошибки Directum.
+Отвечай только на русском языке и верни только JSON без markdown с полями:
+path, explanation, old_text, new_text.
+path должен быть относительным путём к одному исходному файлу.
+old_text должен быть точным существующим фрагментом из файла, new_text — его заменой.
+Не выдумывай содержимое файла: сначала используй read_git_file.
+Не предлагай изменения, если причина недостаточно подтверждена кодом.
 """
 
 
@@ -91,3 +101,34 @@ def analyze_log(
             HumanMessage(content=f"The primary model failed; retry using the fallback model. Error: {primary_error}")
         )
         return _invoke_with_tools(fallback, tools, messages, max_iterations)
+
+
+def propose_fix(
+    log_data: Any,
+    repo_root: str | Path,
+    settings: Settings | None = None,
+    model_factory: Callable[[Settings, str], Runnable] = _create_model,
+    max_iterations: int = 6,
+) -> FixProposal:
+    """Ask the agent for a reviewable fix; this function never writes files."""
+
+    active_settings = settings or get_settings()
+    tools = build_repository_tools(repo_root)
+    messages = [
+        SystemMessage(content=FIX_PROMPT),
+        HumanMessage(content=f"Лог и контекст для исправления:\n{log_data}"),
+    ]
+    try:
+        model = model_factory(active_settings, active_settings.gigachat_model)
+        response = _invoke_with_tools(model, tools, messages, max_iterations)
+    except Exception as primary_error:
+        if not active_settings.has_gigachat_credentials:
+            raise
+        fallback = model_factory(active_settings, active_settings.gigachat_fallback_model)
+        messages.append(HumanMessage(content=f"Повтори с fallback-моделью. Ошибка: {primary_error}"))
+        response = _invoke_with_tools(fallback, tools, messages, max_iterations)
+
+    try:
+        return FixProposal.model_validate_json(response)
+    except ValueError:
+        raise ValueError("Агент не вернул корректное предложение исправления в формате JSON") from None

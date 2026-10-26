@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Directum Log Analyzer</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main class="workspace">
+      <header class="topbar">
+        <div class="brand-mark" aria-hidden="true">DL</div>
+        <div>
+          <p class="eyebrow">DIRECTUM / DIAGNOSTICS</p>
+          <h1>Разбор инцидента</h1>
+        </div>
+        <div class="status-pill"><span class="status-dot"></span>Локальный режим</div>
+      </header>
+
+      <section class="intro">
+        <p class="section-kicker">01 / Входные данные</p>
+        <h2>Загрузите лог,<br><em>найдите причину.</em></h2>
+        <p class="intro-copy">Агент сопоставит ошибку с исходным кодом и соберёт техническое заключение на русском языке.</p>
+      </section>
+
+      <form id="analyze-form" class="analysis-form">
+        <label class="upload-zone" for="log-file">
+          <input id="log-file" name="file" type="file" accept="application/json,.json" required>
+          <span class="upload-icon" aria-hidden="true">↑</span>
+          <span class="upload-title" id="file-name">Выберите JSON-файл</span>
+          <span class="upload-meta">или перетащите его сюда</span>
+        </label>
+
+        <label class="field-label" for="repo-path">Корень репозитория <span>необязательно</span></label>
+        <div class="repo-field">
+          <span class="repo-prefix">⌂</span>
+          <input id="repo-path" name="repo" type="text" placeholder="/Users/.../project" autocomplete="off">
+        </div>
+
+        <button id="submit-button" class="submit-button" type="submit">
+          <span>Проверить лог</span>
+          <span class="button-arrow" aria-hidden="true">↗</span>
+        </button>
+      </form>
+
+      <section id="result-panel" class="result-panel" aria-live="polite" hidden>
+        <div class="result-heading">
+          <div>
+            <p class="section-kicker">02 / Заключение</p>
+            <h2>Результат анализа</h2>
+          </div>
+          <span id="result-time" class="result-time"></span>
+        </div>
+        <div id="result-content" class="result-content"></div>
+        <div class="fix-actions">
+          <button id="propose-button" class="secondary-button" type="button">Предложить исправление</button>
+          <p id="fix-message" class="form-message" role="alert"></p>
+        </div>
+        <section id="proposal-panel" class="proposal-panel" hidden>
+          <p class="section-kicker">03 / Проверка изменения</p>
+          <h3 id="proposal-explanation"></h3>
+          <p class="proposal-path" id="proposal-path"></p>
+          <div class="diff-grid">
+            <div><span class="diff-label removed">Было</span><pre id="old-text"></pre></div>
+            <div><span class="diff-label added">Станет</span><pre id="new-text"></pre></div>
+          </div>
+          <button id="apply-button" class="submit-button" type="button">Применить изменение <span class="button-arrow">✓</span></button>
+          <p class="approval-note">Изменение не будет применено без вашего нажатия. Перед записью создаётся резервная копия.</p>
+        </section>
+      </section>
+
+      <p id="form-message" class="form-message" role="alert"></p>
+      <footer><span>GigaChat-2-Max</span><span>●</span><span>Без сохранения файлов</span></footer>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     gigachat_model: str = "GigaChat-2-Max"
     gigachat_fallback_model: str = "GigaChat-2"
     gigachat_verify_ssl_certs: bool = False
+    github_token: SecretStr | None = None
+    github_repository: str | None = None
+    github_api_url: str = "https://api.github.com"
+    github_default_branch: str = "main"
+    ci_poll_interval_seconds: int = 60
 
     model_config = SettingsConfigDict(
         env_file=".env",

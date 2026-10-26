@@ -28,3 +28,26 @@ class AnalyzeResponse(BaseModel):
     """Successful analysis response."""
 
     result: str
+
+
+class FixProposal(BaseModel):
+    """A precise, reviewable replacement proposed by the agent."""
+
+    path: str
+    explanation: str
+    old_text: str
+    new_text: str
+
+
+class ApplyFixRequest(FixProposal):
+    """A fix proposal plus explicit user consent."""
+
+    approved: bool = False
+
+
+class ApplyFixResponse(BaseModel):
+    """Result of applying an approved fix."""
+
+    path: str
+    backup_path: str
+    message: str
