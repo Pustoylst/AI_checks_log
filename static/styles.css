@@ -1,96 +1,208 @@
+/* --- ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ (GitHub Dark Theme) --- */
 :root {
-  --ink: #17231f;
-  --muted: #6e7c75;
-  --paper: #f5f4ee;
-  --panel: #fffefa;
-  --line: #d7ddd4;
-  --accent: #d8f36b;
-  --accent-dark: #4b6418;
-  --error: #a63e38;
-  --serif: Georgia, "Times New Roman", serif;
-  --sans: "Avenir Next", "Helvetica Neue", sans-serif;
+  --gh-bg-canvas: #0d1117;
+  --gh-bg-default: #161b22;
+  --gh-bg-inset: #010409;
+  --gh-border-default: #30363d;
+  --gh-border-muted: #21262d;
+  --gh-fg-default: #e6edf3;
+  --gh-fg-muted: #8b949e;
+  --gh-accent-fg: #2f81f7;
+  --gh-accent-emphasis: #1f6feb;
+  --gh-success-fg: #3fb950;
+  --gh-danger-fg: #f85149;
+  --gh-btn-bg: #21262d;
+  --gh-btn-hover-bg: #30363d;
+  --gh-btn-border: rgba(240, 246, 252, 0.1);
+  --gh-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  --gh-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 * { box-sizing: border-box; }
+
 body {
   margin: 0;
-  color: var(--ink);
-  background: var(--paper);
-  font-family: var(--sans);
+  background-color: var(--gh-bg-canvas);
+  color: var(--gh-fg-default);
+  font-family: var(--gh-font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
-.workspace { width: min(100% - 48px, 980px); margin: 0 auto; padding: 32px 0 22px; }
-.topbar { display: flex; align-items: center; gap: 14px; border-bottom: 1px solid var(--line); padding-bottom: 24px; }
-.brand-mark { display: grid; place-items: center; width: 42px; height: 42px; background: var(--ink); color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: 1px; }
-.eyebrow, .section-kicker { margin: 0; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; }
-h1, h2, p { margin-top: 0; }
-h1 { margin-bottom: 0; font-size: 18px; letter-spacing: -.3px; }
-.status-pill { display: flex; align-items: center; gap: 7px; margin-left: auto; color: var(--muted); font-size: 12px; }
-.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #78a32a; box-shadow: 0 0 0 4px #e4edcf; }
-.intro { padding: 70px 0 34px; max-width: 650px; }
-.intro h2, .result-heading h2 { margin: 13px 0 18px; font-family: var(--serif); font-size: clamp(42px, 7vw, 72px); font-weight: 400; line-height: .96; letter-spacing: -2px; }
-.intro h2 em { color: #748f26; font-style: italic; }
-.intro-copy { max-width: 420px; margin-bottom: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
-.analysis-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, .75fr); gap: 12px 16px; align-items: end; padding: 24px; background: var(--panel); border: 1px solid var(--line); }
-.control-panel { margin-top: 24px; padding: 24px; border: 1px solid var(--line); background: rgba(255,254,250,.7); }
-.control-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
-.control-heading h2 { margin: 8px 0 0; font-family: var(--serif); font-size: 30px; font-weight: 400; }
-.control-buttons { display: flex; gap: 8px; }
-.status-output { margin: 20px 0 0; padding: 14px; background: var(--ink); color: var(--accent); font: 12px/1.6 monospace; white-space: pre-wrap; }
-.ci-results { margin-top: 14px; }
-.ci-result { margin-top: 10px; padding: 14px; border-left: 3px solid var(--error); background: var(--panel); }
-.ci-result strong, .ci-result a { display: block; font-size: 12px; }
-.ci-result a { margin-top: 6px; color: var(--accent-dark); }
-.ci-result p { margin: 12px 0 0; white-space: pre-wrap; font-size: 13px; line-height: 1.55; }
-.ci-fix-button { margin-top: 14px; }
-.upload-zone { grid-row: span 2; display: flex; min-height: 180px; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed #aeb9a8; background: #fbfcf5; cursor: pointer; transition: background .2s, border-color .2s; }
-.upload-zone:hover, .upload-zone:focus-within { border-color: var(--accent-dark); background: #f4f9dd; }
-.upload-zone input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.upload-icon { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 14px; border: 1px solid var(--line); color: var(--accent-dark); font-size: 22px; }
-.upload-title { font-size: 14px; font-weight: 700; }
-.upload-meta { margin-top: 7px; color: var(--muted); font-size: 12px; }
-.field-label { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .5px; }
-.field-label span { margin-left: 5px; font-weight: 400; }
-.repo-field { display: flex; align-items: center; border-bottom: 1px solid var(--ink); }
-.repo-prefix { color: var(--muted); font-size: 16px; }
-.repo-field input { width: 100%; padding: 10px 8px; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 13px; }
-.submit-button { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 16px; border: 0; background: var(--ink); color: white; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
-.submit-button:hover { background: #2f4037; }
-.submit-button:disabled { cursor: wait; opacity: .65; }
-.button-arrow { color: var(--accent); font-size: 20px; }
-.result-panel { margin-top: 56px; padding: 28px 0 0; border-top: 1px solid var(--line); animation: reveal .35s ease-out; }
-.result-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
-.result-heading h2 { margin-bottom: 0; font-size: 42px; }
-.result-time { color: var(--muted); font-size: 11px; }
-.result-content { margin-top: 24px; padding: 24px; border-left: 3px solid var(--accent-dark); background: var(--panel); font-size: 14px; line-height: 1.65; }
-.fix-actions { display: flex; align-items: center; gap: 16px; margin-top: 20px; }
-.secondary-button { padding: 11px 15px; border: 1px solid var(--ink); background: transparent; color: var(--ink); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-.secondary-button:hover { background: var(--accent); }
-.proposal-panel { margin-top: 24px; padding: 24px; border: 1px solid var(--line); background: #fbfcf5; animation: reveal .3s ease-out; }
-.proposal-panel h3 { max-width: 700px; margin: 12px 0 8px; font-size: 16px; line-height: 1.4; }
-.proposal-path { color: var(--muted); font-family: monospace; font-size: 12px; }
-.diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
-.diff-grid > div { min-width: 0; }
-.diff-label { display: block; margin-bottom: 6px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-.diff-label.removed { color: var(--error); }
-.diff-label.added { color: var(--accent-dark); }
-pre { min-height: 70px; margin: 0; overflow-x: auto; padding: 12px; background: var(--panel); border: 1px solid var(--line); font: 12px/1.5 monospace; white-space: pre-wrap; }
-.description-preview { width: 100%; min-height: 260px; margin: 8px 0 16px; padding: 14px; resize: vertical; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 13px/1.55 var(--sans); }
-.approval-note { margin: 12px 0 0; color: var(--muted); font-size: 11px; }
-.proposal-panel.applied { border-color: var(--accent-dark); }
-.git-actions { display: grid; gap: 10px; margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
-.form-message { min-height: 20px; margin: 14px 0 0; color: var(--error); font-size: 13px; }
-footer { display: flex; gap: 10px; margin-top: 72px; color: var(--muted); font-size: 10px; letter-spacing: .8px; text-transform: uppercase; }
-@keyframes reveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 680px) {
-  .workspace { width: min(100% - 28px, 980px); padding-top: 20px; }
-  .status-pill { font-size: 0; }
-  .intro { padding: 52px 0 28px; }
-  .intro h2 { font-size: 48px; }
-  .analysis-form { grid-template-columns: 1fr; padding: 16px; }
-  .upload-zone { grid-row: auto; min-height: 165px; }
-  .result-heading { align-items: start; flex-direction: column; }
-  .fix-actions, .diff-grid { grid-template-columns: 1fr; flex-direction: column; align-items: stretch; }
-  .control-heading { align-items: stretch; flex-direction: column; }
-  .control-buttons { grid-template-columns: 1fr; flex-direction: column; }
-  footer { margin-top: 48px; }
+
+/* --- ШАПКА САЙТА --- */
+.gh-header {
+  background-color: var(--gh-bg-default);
+  border-bottom: 1px solid var(--gh-border-default);
+  padding: 16px 0;
+}
+.gh-header-container {
+  max-width: 1012px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.gh-logo { color: #fff; display: flex; align-items: center; }
+.gh-header-title { display: flex; align-items: center; gap: 8px; font-size: 18px; }
+.gh-repo-name { font-weight: 600; color: var(--gh-accent-fg); cursor: pointer; }
+.gh-badge-public {
+  font-size: 12px; color: var(--gh-fg-muted); border: 1px solid var(--gh-border-default);
+  border-radius: 2em; padding: 0 7px; line-height: 18px;
+}
+.gh-status-pill {
+  margin-left: auto; display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--gh-fg-muted);
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--gh-success-fg); }
+
+/* --- ОСНОВНОЙ КАРКАС --- */
+.workspace { max-width: 1012px; margin: 0 auto; padding: 24px; }
+.gh-page-heading h1 { font-size: 24px; font-weight: 400; margin: 0 0 8px 0; }
+.gh-page-heading p { margin: 0 0 24px 0; color: var(--gh-fg-muted); font-size: 16px; }
+
+/* --- ТАБЫ --- */
+.gh-tabs { display: flex; border-bottom: 1px solid var(--gh-border-default); margin-bottom: 24px; }
+.gh-tab {
+  padding: 8px 16px; text-decoration: none; color: var(--gh-fg-default);
+  border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 8px;
+  font-size: 14px; margin-bottom: -1px;
+}
+.gh-tab:hover { border-bottom-color: var(--gh-border-default); }
+.gh-tab.active { font-weight: 600; border-bottom-color: #f78166; }
+.gh-tab .octicon { fill: var(--gh-fg-muted); }
+
+/* --- КАРТОЧКИ --- */
+.gh-box {
+  background-color: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+.gh-box-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--gh-border-default);
+  background-color: var(--gh-bg-default);
+  border-radius: 6px 6px 0 0;
+}
+.gh-box-header h2 { font-size: 16px; margin: 0; font-weight: 600; }
+.gh-box-body { padding: 16px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gh-actions { display: flex; gap: 8px; }
+
+/* --- ФОРМЫ --- */
+.gh-form-group { margin-bottom: 16px; }
+.gh-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+.gh-optional { font-weight: 400; color: var(--gh-fg-muted); }
+.gh-input, .gh-textarea {
+  width: 100%; padding: 5px 12px; font-size: 14px; line-height: 20px;
+  color: var(--gh-fg-default); background-color: var(--gh-bg-inset);
+  border: 1px solid var(--gh-border-default); border-radius: 6px;
+  outline: none; font-family: var(--gh-font-sans);
+}
+.gh-input:focus, .gh-textarea:focus {
+  border-color: var(--gh-accent-fg); box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.3);
+}
+.gh-textarea { min-height: 150px; resize: vertical; font-family: var(--gh-font-mono); font-size: 12px; }
+
+/* --- ЗОНА ЗАГРУЗКИ --- */
+.gh-upload-zone {
+  border: 1px dashed var(--gh-border-default); border-radius: 6px;
+  padding: 32px; text-align: center; position: relative; cursor: pointer;
+  background-color: var(--gh-bg-inset); transition: border-color 0.2s;
+}
+.gh-upload-zone:hover { border-color: var(--gh-fg-muted); }
+.gh-upload-zone input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.gh-upload-icon { display: block; font-size: 24px; color: var(--gh-fg-muted); margin-bottom: 8px; }
+.gh-upload-text { color: var(--gh-fg-default); font-weight: 500; }
+
+/* --- КНОПКИ --- */
+.gh-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 5px 16px; font-size: 14px; font-weight: 500; line-height: 20px;
+  cursor: pointer; border-radius: 6px;
+  background-color: var(--gh-btn-bg); color: var(--gh-fg-default);
+  border: 1px solid var(--gh-btn-border); transition: 0.2s;
+}
+.gh-btn:hover { background-color: var(--gh-btn-hover-bg); }
+.gh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.gh-btn-primary { background-color: var(--gh-accent-emphasis); color: #ffffff; border-color: rgba(240, 246, 252, 0.1); }
+.gh-btn-primary:hover { background-color: #388bfd; }
+
+/* --- КОД И MARKDOWN --- */
+.gh-code-block {
+  background-color: var(--gh-bg-inset); padding: 16px; border-radius: 6px;
+  font-family: var(--gh-font-mono); font-size: 12px; overflow-x: auto;
+  border: 1px solid var(--gh-border-default); color: var(--gh-fg-default);
+  white-space: pre-wrap;
+}
+.gh-markdown-body { font-family: var(--gh-font-sans); line-height: 1.6; }
+.gh-markdown-body h1, .gh-markdown-body h2, .gh-markdown-body h3 {
+  border-bottom: 1px solid var(--gh-border-muted); padding-bottom: 0.3em; margin-top: 24px; margin-bottom: 16px; font-weight: 600;
+}
+.gh-markdown-body h2 { font-size: 20px; }
+.gh-markdown-body h3 { font-size: 16px; }
+.gh-markdown-body p { margin-top: 0; margin-bottom: 16px; }
+.gh-markdown-body ul, .gh-markdown-body ol { padding-left: 2em; margin-bottom: 16px; }
+.gh-markdown-body pre { background-color: var(--gh-bg-inset); padding: 16px; border-radius: 6px; overflow: auto; }
+.gh-markdown-body code { font-family: var(--gh-font-mono); font-size: 85%; background-color: rgba(110,118,129,0.4); padding: 0.2em 0.4em; border-radius: 6px; }
+.gh-markdown-body pre code { background-color: transparent; padding: 0; }
+
+/* --- DIFF --- */
+.gh-diff-container {
+  border: 1px solid var(--gh-border-default); border-radius: 6px; overflow: hidden; margin: 16px 0;
+}
+.gh-diff-header { display: flex; background-color: var(--gh-bg-default); border-bottom: 1px solid var(--gh-border-default); }
+.gh-diff-col { flex: 1; padding: 8px 16px; font-weight: 600; font-size: 12px; color: var(--gh-fg-muted); }
+.gh-diff-body { display: flex; }
+.gh-diff-side { flex: 1; overflow-x: auto; font-family: var(--gh-font-mono); font-size: 12px; line-height: 20px; }
+.gh-diff-side pre { margin: 0; padding: 8px 16px; white-space: pre-wrap; }
+.gh-diff-removed { background-color: rgba(248, 81, 73, 0.1); border-right: 1px solid var(--gh-border-default); }
+.gh-diff-removed pre { color: #ff7b72; }
+.gh-diff-added { background-color: rgba(63, 185, 80, 0.1); }
+.gh-diff-added pre { color: #7ee787; }
+
+/* --- УТИЛИТЫ --- */
+.gh-alert { color: var(--gh-danger-fg); font-size: 14px; margin: 8px 0; }
+.gh-text-muted { color: var(--gh-fg-muted); }
+.mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 24px; }
+.pt-4 { padding-top: 24px; } .mb-3 { margin-bottom: 12px; }
+.border-top { border-top: 1px solid var(--gh-border-default); }
+.text-sm { font-size: 12px; }
+.text-lg { font-size: 18px; } .font-semibold { font-weight: 600; }
+
+/* --- БАННЕР УСПЕШНОГО PR --- */
+.gh-alert-success {
+  padding: 12px 16px;
+  background-color: rgba(63, 185, 80, 0.15);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+  border-radius: 6px;
+  color: var(--gh-success-fg);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+.gh-alert-success[hidden] { display: none !important; }
+.gh-link { color: var(--gh-accent-fg); text-decoration: none; font-weight: 600; }
+.gh-link:hover { text-decoration: underline; }
+
+/* --- СПИННЕР --- */
+.spinner {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
+  border-top-color: #fff; animation: spin 0.8s linear infinite;
+}
+.spinner[hidden] { display: none !important; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- ПОДВАЛ И АДАПТИВНОСТЬ --- */
+.gh-footer { display: flex; gap: 12px; justify-content: center; padding: 40px 0 20px; font-size: 12px; color: var(--gh-fg-muted); }
+
+@media (max-width: 768px) {
+  .gh-header-container { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .gh-status-pill { margin-left: 0; }
+  .gh-diff-body { flex-direction: column; }
+  .gh-diff-removed { border-right: none; border-bottom: 1px solid var(--gh-border-default); }
+  .flex-between { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
