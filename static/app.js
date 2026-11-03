@@ -39,7 +39,16 @@ function showProposal(payload) {
   proposalExplanation.innerHTML = renderMarkdown(payload.explanation);
   proposalPath.textContent = `Файл: ${payload.path}`;
   oldText.textContent = payload.old_text;
-  newText.innerHTML = renderMarkdown(payload.new_text);
+  if (!payload.new_text || payload.new_text.trim() === "") {
+    newText.innerHTML = '<span style="color: #6e7c75; font-style: italic;">Агент не смог предложить безопасное изменение для этого фрагмента.</span>';
+    newText.style.display = 'flex';
+    newText.style.alignItems = 'center';
+    newText.style.justifyContent = 'center';
+  } else {
+    newText.innerHTML = renderMarkdown(payload.new_text);
+    hljs.highlightAll();
+    newText.style.display = 'block';
+  }
   hljs.highlightAll();
   prDescription.value = payload.description || "Описание будет сформировано при создании Pull Request.";
   document.querySelector("#pr-title").value = `fix: ${payload.path}`;
