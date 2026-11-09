@@ -1,19 +1,37 @@
-/* --- ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ (GitHub Dark Theme) --- */
+/* --- ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ (Directum RX Light Theme) --- */
 :root {
-  --gh-bg-canvas: #0d1117;
-  --gh-bg-default: #161b22;
-  --gh-bg-inset: #010409;
-  --gh-border-default: #30363d;
-  --gh-border-muted: #21262d;
-  --gh-fg-default: #e6edf3;
-  --gh-fg-muted: #8b949e;
-  --gh-accent-fg: #2f81f7;
-  --gh-accent-emphasis: #1f6feb;
-  --gh-success-fg: #3fb950;
-  --gh-danger-fg: #f85149;
-  --gh-btn-bg: #21262d;
-  --gh-btn-hover-bg: #30363d;
-  --gh-btn-border: rgba(240, 246, 252, 0.1);
+  color-scheme: light;
+
+  /* Фоны */
+  --gh-bg-canvas: #F4F5F7;
+  --gh-bg-default: #FFFFFF;
+  --gh-bg-subtle: #F9FAFB;
+  --gh-bg-inset: #F9FAFB;
+
+  /* Границы и разделители */
+  --gh-border-default: #DCE1E7;
+  --gh-border-muted: #E8ECEF;
+
+  /* Текст */
+  --gh-fg-default: #263238;
+  --gh-fg-muted: #607D8B;
+
+  /* Фирменный акцент Directum RX */
+  --gh-accent-fg: #F37021;
+  --gh-accent-emphasis: #D95B11;
+  --gh-accent-subtle: #FFF3EB;
+
+  /* Статусы */
+  --gh-success-fg: #1E8E3E;
+  --gh-danger-fg: #D93025;
+  --gh-attention-fg: #E37400;
+
+  /* Кнопки */
+  --gh-btn-bg: #FFFFFF;
+  --gh-btn-hover-bg: #FFF3EB;
+  --gh-btn-border: #DCE1E7;
+
+  /* Шрифты */
   --gh-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   --gh-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
@@ -22,12 +40,16 @@
 
 body {
   margin: 0;
+  min-height: 100vh;
   background-color: var(--gh-bg-canvas);
   color: var(--gh-fg-default);
   font-family: var(--gh-font-sans);
   font-size: 14px;
   line-height: 1.5;
+  accent-color: var(--gh-accent-fg);
+  caret-color: var(--gh-accent-fg);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* --- ШАПКА САЙТА --- */
