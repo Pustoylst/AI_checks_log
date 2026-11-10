@@ -32,7 +32,7 @@
   --gh-btn-border: #DCE1E7;
 
   /* Шрифты */
-  --gh-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  --gh-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --gh-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
@@ -59,14 +59,14 @@ body {
   padding: 16px 0;
 }
 .gh-header-container {
-  max-width: 1012px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
   display: flex;
   align-items: center;
   gap: 16px;
 }
-.gh-logo { color: #fff; display: flex; align-items: center; }
+.gh-logo { color: var(--gh-accent-fg); display: flex; align-items: center; }
 .gh-header-title { display: flex; align-items: center; gap: 8px; font-size: 18px; }
 .gh-repo-name { font-weight: 600; color: var(--gh-accent-fg); cursor: pointer; }
 .gh-badge-public {
@@ -80,9 +80,15 @@ body {
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--gh-success-fg); }
 
 /* --- ОСНОВНОЙ КАРКАС --- */
-.workspace { max-width: 1012px; margin: 0 auto; padding: 24px; }
-.gh-page-heading h1 { font-size: 24px; font-weight: 400; margin: 0 0 8px 0; }
-.gh-page-heading p { margin: 0 0 24px 0; color: var(--gh-fg-muted); font-size: 16px; }
+.workspace { max-width: 1200px; margin: 0 auto; padding: 32px 24px 48px; }
+.gh-page-heading h1 {
+  font-size: 28px; font-weight: 600; line-height: 1.25; letter-spacing: -0.01em;
+  margin: 0 0 8px 0;
+}
+.gh-page-heading p {
+  max-width: 760px; margin: 0 0 28px 0;
+  color: var(--gh-fg-muted); font-size: 16px; line-height: 1.5;
+}
 
 /* --- ТАБЫ --- */
 .gh-tabs { display: flex; border-bottom: 1px solid var(--gh-border-default); margin-bottom: 24px; }
@@ -100,18 +106,20 @@ body {
   background-color: var(--gh-bg-default);
   border: 1px solid var(--gh-border-default);
   border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(38, 50, 56, 0.06);
   margin-bottom: 16px;
 }
 .gh-box-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--gh-border-default);
-  background-color: var(--gh-bg-default);
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gh-border-muted);
+  background-color: var(--gh-bg-subtle);
+  color: var(--gh-fg-default);
   border-radius: 6px 6px 0 0;
 }
-.gh-box-header h2 { font-size: 16px; margin: 0; font-weight: 600; }
-.gh-box-body { padding: 16px; }
-.flex-between { display: flex; justify-content: space-between; align-items: center; }
-.gh-actions { display: flex; gap: 8px; }
+.gh-box-header h2 { font-size: 16px; line-height: 1.4; margin: 0; font-weight: 600; }
+.gh-box-body { padding: 20px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.gh-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* --- ФОРМЫ --- */
 .gh-form-group { margin-bottom: 16px; }
