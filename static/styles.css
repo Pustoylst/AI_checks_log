@@ -193,18 +193,87 @@ body {
 
 /* --- ФОРМЫ --- */
 .gh-form-group { margin-bottom: 16px; }
-.gh-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+.gh-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--gh-fg-default);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
 .gh-optional { font-weight: 400; color: var(--gh-fg-muted); }
-.gh-input, .gh-textarea {
-  width: 100%; padding: 5px 12px; font-size: 14px; line-height: 20px;
-  color: var(--gh-fg-default); background-color: var(--gh-bg-inset);
-  border: 1px solid var(--gh-border-default); border-radius: 6px;
-  outline: none; font-family: var(--gh-font-sans);
+.gh-input,
+.gh-textarea,
+input[type="text"],
+textarea,
+select {
+  width: 100%;
+  padding: 8px 12px;
+  color: var(--gh-fg-default);
+  background-color: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 5px;
+  outline: none;
+  font-family: var(--gh-font-sans);
+  font-size: 14px;
+  line-height: 20px;
 }
-.gh-input:focus, .gh-textarea:focus {
-  border-color: var(--gh-accent-fg); box-shadow: 0 0 0 3px rgba(243, 112, 33, 0.18);
+.gh-input::placeholder,
+.gh-textarea::placeholder,
+input[type="text"]::placeholder,
+textarea::placeholder {
+  color: var(--gh-fg-muted);
+  opacity: 1;
 }
-.gh-textarea { min-height: 150px; resize: vertical; font-family: var(--gh-font-mono); font-size: 12px; }
+.gh-input:focus,
+.gh-textarea:focus,
+input[type="text"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--gh-accent-fg);
+  box-shadow: 0 0 0 3px rgba(243, 112, 33, 0.15);
+  outline: none;
+}
+.gh-input[readonly],
+.gh-textarea[readonly],
+input[type="text"][readonly],
+textarea[readonly] {
+  background-color: var(--gh-bg-subtle);
+  border-color: var(--gh-border-muted);
+  color: var(--gh-fg-muted);
+  cursor: default;
+  opacity: 1;
+}
+.gh-input:disabled,
+.gh-textarea:disabled,
+input[type="text"]:disabled,
+textarea:disabled,
+select:disabled {
+  background-color: var(--gh-bg-subtle);
+  border-color: var(--gh-border-muted);
+  color: var(--gh-fg-muted);
+  cursor: not-allowed;
+  opacity: 1;
+}
+.gh-textarea {
+  min-height: 150px;
+  resize: vertical;
+  font-family: var(--gh-font-mono);
+  font-size: 12px;
+}
+input[type="radio"] {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--gh-accent-fg);
+  vertical-align: middle;
+  cursor: pointer;
+}
+input[type="radio"]:focus-visible {
+  outline: 2px solid var(--gh-accent-fg);
+  outline-offset: 2px;
+}
 
 /* --- ЗОНА ЗАГРУЗКИ --- */
 .gh-upload-zone {
