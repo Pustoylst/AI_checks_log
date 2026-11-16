@@ -8,7 +8,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
-from app.agent import analyze_log, propose_fix
+from app.agent import FixProposalError, analyze_log, propose_fix
+from app.tools import validate_repository_root
 from app.ci_watcher import _run_logs, mark_fix_proposed, scan_failed_runs
 from app.fixes import apply_approved_fix
 from app.git_service import (
@@ -22,6 +23,13 @@ from app.schemas import ApplyFixRequest, ApplyFixResponse, AnalyzeResponse, FixP
 
 app = FastAPI(title="Directum Log Analyzer", version="0.1.0")
 app.mount("/static", StaticFiles(directory=Path(__file__).parent.parent / "static"), name="static")
+
+
+def _repository_root(repo: str) -> Path:
+    try:
+        return validate_repository_root(repo)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from None
 
 
 @app.get("/", include_in_schema=False)
@@ -66,6 +74,7 @@ def ci_checks_endpoint(ref: str | None = Query(default=None)) -> dict[str, objec
 def ci_scan_endpoint(repo: str = Query(...)) -> dict[str, object]:
     """Scan new failed GitHub Actions runs once without changing Git files."""
 
+    repo = str(_repository_root(repo))
     try:
         from app.config import get_settings
 
@@ -88,14 +97,15 @@ def ci_scan_endpoint(repo: str = Query(...)) -> dict[str, object]:
 def ci_propose_fix_endpoint(run_id: int = Query(...), repo: str = Query(...)) -> FixProposal:
     """Build a code-fix proposal directly from a failed GitHub Actions run."""
 
+    root = _repository_root(repo)
     try:
         from app.config import get_settings
 
         settings = get_settings()
         logs = _run_logs(settings, run_id)
         log_data = {"run_id": run_id, "ci_logs": logs}
-        analysis = analyze_log(log_data, repo_root=Path(repo), settings=settings)
-        proposal = propose_fix(log_data, Path(repo), settings=settings)
+        analysis = analyze_log(log_data, repo_root=root, settings=settings)
+        proposal = propose_fix(log_data, root, settings=settings)
         proposal.analysis = analysis
         proposal.run_id = run_id
         proposal.description = build_pull_request_body(
@@ -109,6 +119,8 @@ def ci_propose_fix_endpoint(run_id: int = Query(...), repo: str = Query(...)) ->
         state_dir = Path(settings.ci_state_dir).expanduser().resolve()
         mark_fix_proposed(repo, run_id, state_dir / f"{Path(repo).resolve().name}-proposed.json")
         return proposal
+    except FixProposalError as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(error)) from None
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
     except GitOperationError as error:
@@ -167,14 +179,15 @@ async def analyze_endpoint(
     except ValidationError as error:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=json.loads(error.json())) from None
 
+    root = _repository_root(repo) if repo else None
     try:
-        result = analyze_log(payload.model_dump(exclude_none=True), repo_root=Path(repo) if repo else None)
+        result = analyze_log(payload.model_dump(exclude_none=True), repo_root=root)
     except TimeoutError:
-        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="GigaChat не ответил вовремя") from None
+        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Ollama не ответил вовремя") from None
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
     except Exception as error:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Ошибка GigaChat: {error}") from None
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Ошибка локальной Ollama: {error}. Проверьте запуск Ollama и наличие модели: ollama pull qwen3:8b") from None
 
     return AnalyzeResponse(result=result)
 
@@ -193,18 +206,21 @@ async def propose_fix_endpoint(
         payload = LogPayload.model_validate(json.loads(raw_data))
     except (json.JSONDecodeError, UnicodeDecodeError, ValidationError):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Нужен корректный JSON-лог") from None
+    root = _repository_root(repo)
     try:
         from app.config import get_settings
 
         settings = get_settings()
         log_data = payload.model_dump(exclude_none=True)
-        analysis = analyze_log(log_data, repo_root=Path(repo), settings=settings)
-        proposal = propose_fix(log_data, Path(repo), settings=settings)
+        analysis = analyze_log(log_data, repo_root=root, settings=settings)
+        proposal = propose_fix(log_data, root, settings=settings)
         proposal.analysis = analysis
         proposal.description = build_pull_request_body(
             proposal.path, proposal.explanation, proposal.old_text, proposal.new_text, analysis=proposal.analysis
         )
         return proposal
+    except FixProposalError as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(error)) from None
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Не удалось подготовить исправление: {error}") from None
 

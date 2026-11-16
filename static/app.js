@@ -41,10 +41,14 @@ repoPathInput.addEventListener("input", () => {
 // ==========================================================================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ==========================================================================
+// Local-only rendering: model output is text, never executable HTML.
+const hljs = { highlightAll() {} };
 function renderMarkdown(text) {
-    if (!text) return "";
-    const rawHtml = marked.parse(text);
-    return DOMPurify.sanitize(rawHtml);
+    const node = document.createElement("pre");
+    node.style.whiteSpace = "pre-wrap";
+    node.style.font = "inherit";
+    node.textContent = text || "";
+    return node.outerHTML;
 }
 
 function setLoading(button, isLoading, loadingText = "") {
@@ -97,7 +101,7 @@ function showProposal(payload) {
   if (!payload.new_text || payload.new_text.trim() === "") {
     newText.innerHTML = '<span style="color: var(--gh-fg-muted); font-style: italic;">Агент не смог предложить безопасное изменение для этого фрагмента.</span>';
   } else {
-    newText.innerHTML = renderMarkdown(payload.new_text);
+    newText.textContent = payload.new_text;
     hljs.highlightAll();
   }
   

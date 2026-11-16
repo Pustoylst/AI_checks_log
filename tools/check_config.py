@@ -1,23 +1,26 @@
-"""Check local configuration before connecting to GigaChat."""
+"""Check local Ollama availability without starting inference."""
 
+import httpx
 from app.config import get_settings
 
 
 def main() -> int:
-    """Report whether the required local settings are present."""
-
     settings = get_settings()
-    print(f"scope={settings.gigachat_scope}")
-    print(f"model={settings.gigachat_model}")
-    print(f"fallback_model={settings.gigachat_fallback_model}")
-    print(f"verify_ssl_certs={settings.gigachat_verify_ssl_certs}")
-
-    if not settings.has_gigachat_credentials:
-        print("credentials=missing")
-        print("Set GIGACHAT_CREDENTIALS in .env before testing API access.")
+    print(f"model={settings.ollama_model}")
+    print(f"server={settings.ollama_base_url}")
+    try:
+        with httpx.Client(timeout=5, trust_env=False) as client:
+            response = client.get(f"{settings.ollama_base_url}/api/tags")
+            response.raise_for_status()
+            names = {item["name"] for item in response.json()["models"]}
+    except (httpx.HTTPError, ValueError, KeyError, TypeError) as error:
+        print(f"Ollama недоступен: {error}")
+        print("Установите и запустите Ollama: https://ollama.com/download/windows")
         return 1
-
-    print("credentials=configured")
+    if settings.ollama_model not in names:
+        print(f"Модель не найдена. Выполните: ollama pull {settings.ollama_model}")
+        return 1
+    print("Ollama доступен, модель скачана. Скорость и качество требуют отдельной проверки.")
     return 0
 
 

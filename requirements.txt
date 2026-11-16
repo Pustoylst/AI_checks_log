@@ -1,5 +1,5 @@
 fastapi>=0.115,<1.0
-langchain-gigachat>=0.3,<1.0
+langchain-ollama>=1.0,<2.0
 pydantic>=2.10,<3.0
 pydantic-settings>=2.7,<3.0
 python-multipart>=0.0.20,<1.0

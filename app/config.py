@@ -1,19 +1,19 @@
 """Application configuration loaded from environment variables."""
 
 from functools import lru_cache
+from urllib.parse import urlparse
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Runtime settings for the log analysis application."""
+    """Local inference settings and optional GitHub integration."""
 
-    gigachat_credentials: SecretStr | None = None
-    gigachat_scope: str = "GIGACHAT_API_PERS"
-    gigachat_model: str = "GigaChat-2-Max"
-    gigachat_fallback_model: str = "GigaChat-2"
-    gigachat_verify_ssl_certs: bool = False
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    ollama_model: str = "qwen3:8b"
+    ollama_timeout_seconds: float = Field(default=180, gt=0)
+    ollama_num_ctx: int = Field(default=8192, ge=1024)
     github_token: SecretStr | None = None
     github_repository: str | None = None
     github_api_url: str = "https://api.github.com"
@@ -22,21 +22,22 @@ class Settings(BaseSettings):
     ci_state_dir: str = "../agent-ci-runtime"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
-        case_sensitive=False,
+        env_file=".env", env_file_encoding="utf-8", extra="ignore", case_sensitive=False,
     )
 
-    @property
-    def has_gigachat_credentials(self) -> bool:
-        """Return whether a non-empty GigaChat credential value is configured."""
-
-        return bool(self.gigachat_credentials and self.gigachat_credentials.get_secret_value().strip())
+    @field_validator("ollama_base_url")
+    @classmethod
+    def local_ollama_only(cls, value: str) -> str:
+        """Prevent accidental forwarding of logs to a remote inference endpoint."""
+        parsed = urlparse(value)
+        if (parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}
+                or parsed.username or parsed.password or parsed.query or parsed.fragment
+                or parsed.path not in {"", "/"}):
+            raise ValueError("OLLAMA_BASE_URL должен указывать на локальный HTTP-сервер Ollama")
+        return value.rstrip("/")
 
 
 @lru_cache
 def get_settings() -> Settings:
     """Return cached application settings."""
-
     return Settings()

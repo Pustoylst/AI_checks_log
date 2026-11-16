@@ -36,7 +36,7 @@ def test_agent_calls_read_git_file_and_uses_result(tmp_path: Path) -> None:
     result = analyze_log(
         {"error": "known failure", "file": "handler.py"},
         repo_root=tmp_path,
-        settings=Settings(_env_file=None, gigachat_credentials="test"),
+        settings=Settings(_env_file=None),
         model_factory=lambda settings, model_name: model,
     )
 
@@ -44,25 +44,17 @@ def test_agent_calls_read_git_file_and_uses_result(tmp_path: Path) -> None:
     assert any("known failure" in str(message.content) for message in model.seen_messages[1])
 
 
-def test_agent_uses_fallback_model_after_primary_failure() -> None:
-    models = [
-        RuntimeError("rate limit"),
-        FakeModel([AIMessage(content="fallback response")]),
-    ]
+def test_local_failure_does_not_retry_cloud() -> None:
+    import pytest
+    calls = []
 
     def model_factory(settings, model_name):
-        current = models.pop(0)
-        if isinstance(current, Exception):
-            raise current
-        return current
+        calls.append(model_name)
+        raise ConnectionError("Ollama unavailable")
 
-    result = analyze_log(
-        {"error": "timeout"},
-        settings=Settings(_env_file=None, gigachat_credentials="test"),
-        model_factory=model_factory,
-    )
-
-    assert result == "fallback response"
+    with pytest.raises(ConnectionError, match="Ollama unavailable"):
+        analyze_log({"error": "timeout"}, settings=Settings(_env_file=None), model_factory=model_factory)
+    assert calls == ["qwen3:8b"]
 
 
 def test_agent_proposes_exact_fix_after_reading_file(tmp_path: Path) -> None:
@@ -84,7 +76,7 @@ def test_agent_proposes_exact_fix_after_reading_file(tmp_path: Path) -> None:
     proposal = propose_fix(
         {"message": "request timeout", "file": "service.py"},
         repo_root=tmp_path,
-        settings=Settings(_env_file=None, gigachat_credentials="test"),
+        settings=Settings(_env_file=None),
         model_factory=lambda settings, model_name: model,
     )
 
@@ -119,7 +111,7 @@ def test_agent_normalizes_report_into_fix_proposal(tmp_path: Path) -> None:
     proposal = propose_fix(
         {"message": "tests failed", "file": "calculator.py"},
         repo_root=tmp_path,
-        settings=Settings(_env_file=None, gigachat_credentials="test"),
+        settings=Settings(_env_file=None),
         model_factory=lambda settings, model_name: model,
     )
 

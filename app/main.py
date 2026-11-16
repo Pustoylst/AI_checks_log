@@ -1,16 +1,5 @@
-"""Application entry point for configuration checks."""
-
-from app.config import get_settings
-
-
-def main() -> None:
-    """Print the configured model without exposing credentials."""
-
-    settings = get_settings()
-    credential_state = "configured" if settings.has_gigachat_credentials else "missing"
-    print(f"GigaChat model: {settings.gigachat_model}")
-    print(f"GigaChat credentials: {credential_state}")
-
+"""Application entry point for local configuration checks."""
+from tools.check_config import main
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

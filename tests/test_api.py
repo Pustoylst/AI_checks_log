@@ -20,7 +20,10 @@ def test_frontend_is_served() -> None:
     response = client.get("/")
 
     assert response.status_code == 200
-    assert "Разбор инцидента" in response.text
+    assert "Разбор инцидентов" in response.text
+    assert "Qwen3 8B" in response.text
+    assert 'src="https://' not in response.text
+    assert 'href="https://' not in response.text
     assert client.get("/static/app.js").status_code == 200
     assert client.get("/static/styles.css").status_code == 200
 
