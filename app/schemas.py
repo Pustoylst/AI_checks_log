@@ -52,7 +52,6 @@ class ApplyFixResponse(BaseModel):
     """Result of applying an approved fix."""
 
     path: str
-    backup_path: str
     message: str
 
 

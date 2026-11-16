@@ -91,7 +91,8 @@ def test_apply_fix_writes_only_approved_exact_change(tmp_path) -> None:
 
     assert response.status_code == 200
     assert (tmp_path / "service.py").read_text(encoding="utf-8") == "new\n"
-    assert Path(response.json()["backup_path"]).exists()
+    assert response.json() == {"path": "service.py", "message": "Изменение применено"}
+    assert list(tmp_path.iterdir()) == [tmp_path / "service.py"]
 
 
 def test_pull_request_endpoint_requires_approval(tmp_path) -> None:

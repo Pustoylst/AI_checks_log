@@ -1,12 +1,11 @@
-"""Safe, explicitly approved code changes."""
+"""Safe, explicitly approved code changes without backup files."""
 
-from datetime import datetime
 from pathlib import Path
 
 from app.tools import _safe_path
 
 
-def apply_approved_fix(repo_root: str | Path, path: str, old_text: str, new_text: str, approved: bool) -> tuple[str, str]:
+def apply_approved_fix(repo_root: str | Path, path: str, old_text: str, new_text: str, approved: bool) -> str:
     """Apply one exact replacement after checking explicit approval and file state."""
 
     if not approved:
@@ -23,7 +22,5 @@ def apply_approved_fix(repo_root: str | Path, path: str, old_text: str, new_text
     if current_text.count(old_text) != 1:
         raise ValueError("Исходный фрагмент не найден ровно один раз; файл не изменён")
 
-    backup_path = file_path.with_name(f"{file_path.name}.backup-{datetime.now():%Y%m%d%H%M%S}")
-    backup_path.write_text(current_text, encoding="utf-8")
     file_path.write_text(current_text.replace(old_text, new_text, 1), encoding="utf-8")
-    return str(file_path.relative_to(Path(repo_root).resolve())), str(backup_path)
+    return str(file_path.relative_to(Path(repo_root).resolve()))

@@ -86,8 +86,9 @@ def main() -> None:
             applied = client.post("/apply-fix", params=params, json={**proposal, "approved": True})
             assert applied.status_code == 200, applied.text
             assert source.read_text(encoding="utf-8") == updated
-            assert Path(applied.json()["backup_path"]).read_text(encoding="utf-8") == original
-            print("PASS approval: denied without consent; applied with backup in temporary fixture only")
+            assert "backup_path" not in applied.json()
+            assert list(root.iterdir()) == [source], "Applying a fix created extra files"
+            print("PASS approval: denied without consent; applied without extra files in temporary fixture only")
 
 
 if __name__ == "__main__":

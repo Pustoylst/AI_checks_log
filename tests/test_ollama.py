@@ -58,7 +58,6 @@ def test_real_adapter_search_read_and_approved_fix(ollama_server, tmp_path):
     with pytest.raises(PermissionError):
         apply_approved_fix(tmp_path, proposal.path, proposal.old_text, proposal.new_text, False)
     assert source.read_text() == "TIMEOUT = 60\n"
-    _, backup = apply_approved_fix(tmp_path, proposal.path, proposal.old_text, proposal.new_text, True)
+    assert apply_approved_fix(tmp_path, proposal.path, proposal.old_text, proposal.new_text, True) == "service.py"
     assert source.read_text() == "TIMEOUT = 120\n"
-    from pathlib import Path
-    assert Path(backup).read_text() == "TIMEOUT = 60\n"
+    assert list(tmp_path.iterdir()) == [source]

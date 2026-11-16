@@ -230,11 +230,11 @@ def apply_fix_endpoint(request: ApplyFixRequest, repo: str = Query(...)) -> Appl
     """Apply only the exact change explicitly approved by the user."""
 
     try:
-        path, backup_path = apply_approved_fix(
+        path = apply_approved_fix(
             repo, request.path, request.old_text, request.new_text, request.approved
         )
     except PermissionError as error:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from None
     except (FileNotFoundError, ValueError) as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from None
-    return ApplyFixResponse(path=path, backup_path=backup_path, message="Изменение применено; резервная копия создана")
+    return ApplyFixResponse(path=path, message="Изменение применено")
