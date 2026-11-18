@@ -512,35 +512,133 @@ input[type="radio"]:focus-visible {
   overflow-wrap: anywhere;
 }
 .share-file-meta { color: var(--gh-fg-muted); font-size: 12px; }
-.share-overview-box {
-  padding: 16px;
-  border: 1px solid var(--gh-border-default);
-  border-radius: 6px;
-  background-color: var(--gh-bg-inset);
-}
 .share-divider {
   margin: 20px 0;
   border-top: 1px solid var(--gh-border-muted);
 }
-.share-drilldown-list {
-  display: flex; flex-direction: column; gap: 8px;
+
+/* --- ОБЩАЯ СВОДКА ПО ЛОГАМ ИЗ СЕТЕВОЙ ПАПКИ --- */
+#share-root {
+  display: inline-block;
+  max-width: 100%;
+  padding: 2px 6px;
+  overflow-wrap: anywhere;
+  color: var(--gh-fg-default);
+  background-color: var(--gh-bg-subtle);
+  border: 1px solid var(--gh-border-muted);
+  border-radius: 4px;
+  font-family: var(--gh-font-mono);
+  font-size: 12px;
 }
-.share-drilldown-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 8px 10px;
+.share-overview-box {
+  padding: 20px;
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+  background-color: var(--gh-bg-subtle);
+}
+.share-overview-box > h3 { margin-top: 0; color: var(--gh-fg-default); }
+.share-overview-box .gh-form-group { margin-bottom: 16px; }
+#share-overview-limit { max-width: 400px; }
+.share-overview-box .gh-actions { align-items: center; gap: 10px; margin-top: 16px; }
+#share-overview-panel {
+  margin-top: 20px;
+  padding: 18px;
+  background-color: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+}
+#share-overview-title { margin-top: 0; color: var(--gh-fg-default); }
+#share-overview-stats {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  color: var(--gh-fg-default);
+  background-color: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+#share-overview-report,
+#share-overview-analysis {
+  max-height: 520px;
+  padding: 16px 18px;
+  overflow: auto;
+  color: var(--gh-fg-default);
+  background-color: var(--gh-bg-default);
   border: 1px solid var(--gh-border-muted);
   border-radius: 6px;
-  background-color: var(--gh-bg-default);
+  line-height: 1.6;
 }
+#share-overview-analysis { background-color: var(--gh-bg-subtle); }
+#share-overview-report > pre,
+#share-overview-analysis > pre {
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+#share-message,
+#share-overview-message {
+  padding: 10px 12px;
+  background-color: var(--gh-bg-subtle);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* Реестр файлов для детального анализа */
+.share-drilldown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  background-color: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+}
+.share-drilldown-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background-color: var(--gh-bg-default);
+  border: 0;
+  border-bottom: 1px solid var(--gh-border-muted);
+  border-radius: 0;
+  transition: background-color 0.2s ease;
+}
+.share-drilldown-row:last-child { border-bottom: 0; }
+.share-drilldown-row:hover { background-color: var(--gh-accent-subtle); }
 .share-drilldown-text {
   flex: 1; min-width: 0;
   display: flex; flex-direction: column; gap: 2px;
 }
 .share-drilldown-path {
-  font-family: var(--gh-font-mono); font-size: 12px;
+  color: var(--gh-fg-default);
+  font-family: var(--gh-font-mono);
+  font-size: 12px;
   overflow-wrap: anywhere;
 }
 .share-drilldown-meta { color: var(--gh-fg-muted); font-size: 12px; }
+.share-drilldown-row .gh-btn {
+  flex: 0 0 auto;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+#share-overview-panel[hidden],
+#share-overview-message[hidden],
+#share-message[hidden],
+#share-overview-stats[hidden],
+#share-overview-analysis[hidden],
+#share-overview-drilldown[hidden],
+#share-files[hidden],
+#share-result-panel[hidden],
+#share-result-source[hidden],
+#share-stats[hidden] { display: none !important; }
 
 /* --- УТИЛИТЫ --- */
 .gh-alert { color: var(--gh-danger-fg); font-size: 14px; margin: 8px 0; }
@@ -593,6 +691,8 @@ input[type="radio"]:focus-visible {
     min-height: 0; padding: 14px 20px;
   }
   .gh-status-pill { margin-left: 0; }
+  .share-drilldown-row { flex-direction: column; align-items: flex-start; }
+  .share-drilldown-row .gh-btn { margin-left: 0; }
   .gh-diff-body { flex-direction: column; }
   .gh-diff-removed { border-right: none; border-bottom: 1px solid var(--gh-border-default); }
   .flex-between { flex-direction: column; align-items: flex-start; gap: 12px; }
