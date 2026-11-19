@@ -492,26 +492,69 @@ input[type="radio"]:focus-visible {
 
 /* --- ЛОГИ ИЗ СЕТЕВОЙ ПАПКИ --- */
 .share-file-list {
-  max-height: 360px; overflow-y: auto;
-  border: 1px solid var(--gh-border-default); border-radius: 6px;
-  background-color: var(--gh-bg-inset);
+  max-height: 420px;
+  overflow-y: auto;
+  background-color: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
 }
 .share-file-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; border-bottom: 1px solid var(--gh-border-muted);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background-color: var(--gh-bg-default);
+  border-bottom: 1px solid var(--gh-border-muted);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
+.share-file-row:nth-child(even) { background-color: rgba(249, 250, 251, 0.65); }
 .share-file-row:last-child { border-bottom: none; }
-.share-file-row:hover { background-color: var(--gh-btn-bg); }
+.share-file-row:hover { background-color: var(--gh-bg-subtle); }
+.share-file-row:has(input:checked) {
+  background-color: var(--gh-accent-subtle);
+  box-shadow: inset 3px 0 0 var(--gh-accent-fg);
+}
+.share-file-row:has(input:checked) .share-file-name {
+  color: var(--gh-accent-emphasis);
+  font-weight: 600;
+}
 .share-file-info {
   display: flex; align-items: center; gap: 10px;
   flex: 1; min-width: 0; cursor: pointer;
 }
 .share-file-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .share-file-name {
-  font-family: var(--gh-font-mono); font-size: 12px;
+  color: var(--gh-fg-default);
+  font-family: var(--gh-font-mono);
+  font-size: 12px;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
-.share-file-meta { color: var(--gh-fg-muted); font-size: 12px; }
+.share-file-meta {
+  color: var(--gh-fg-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.share-file-row > .gh-link {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 4px 10px;
+  color: var(--gh-accent-emphasis);
+  background-color: var(--gh-bg-default);
+  border: 1px solid rgba(243, 112, 33, 0.35);
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  text-decoration: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.share-file-row > .gh-link:hover {
+  color: var(--gh-accent-emphasis);
+  background-color: var(--gh-accent-subtle);
+  border-color: var(--gh-accent-fg);
+  text-decoration: none;
+}
 .share-divider {
   margin: 20px 0;
   border-top: 1px solid var(--gh-border-muted);
@@ -627,6 +670,51 @@ input[type="radio"]:focus-visible {
   flex: 0 0 auto;
   margin-left: auto;
   white-space: nowrap;
+}
+
+/* --- РЕЗУЛЬТАТ АНАЛИЗА ОДНОГО ЛОГА --- */
+#share-result-panel {
+  margin-top: 20px;
+  padding: 18px;
+  background-color: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(38, 50, 56, 0.06);
+}
+#share-result-title { margin-top: 0; color: var(--gh-fg-default); }
+#share-result-source,
+#share-stats {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 8px 12px 0;
+  padding: 3px 9px;
+  overflow-wrap: anywhere;
+  color: var(--gh-fg-muted);
+  background-color: var(--gh-bg-subtle);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+#share-result {
+  max-height: 560px;
+  margin-top: 4px;
+  padding: 16px 18px;
+  overflow: auto;
+  color: var(--gh-fg-default);
+  background-color: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-muted);
+  border-radius: 6px;
+  line-height: 1.6;
+}
+#share-result > pre {
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 #share-overview-panel[hidden],
