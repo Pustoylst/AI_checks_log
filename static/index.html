@@ -24,28 +24,38 @@
       </div>
     </header>
 
-    <!-- ОСНОВНАЯ РАБОЧАЯ ОБЛАСТЬ -->
-    <main class="workspace">
-      <div class="gh-page-heading">
-        <h1>Разбор инцидентов</h1>
-        <p>Автоматический анализ логов и CI/CD инцидентов с помощью локальной Qwen3 8B</p>
-      </div>
+    <!-- КОРПОРАТИВНЫЙ КАРКАС -->
+    <div class="rx-shell">
+      <!-- ЛЕВОЕ МЕНЮ -->
+      <aside class="rx-sidebar">
+        <div class="rx-sidebar-heading">РАЗДЕЛЫ СИСТЕМЫ</div>
+        <nav class="gh-tabs">
+          <a href="#analyze-section" class="gh-tab active">
+            <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"></path></svg>
+            Анализ
+          </a>
+          <a href="#ci-section" class="gh-tab">
+            <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16zm.847-8.508a2.5 2.5 0 11-1.694-4.484 2.5 2.5 0 011.694 4.484zM8.5 14.5a6.5 6.5 0 100-13 6.5 6.5 0 000 13z"></path></svg>
+            CI/CD
+          </a>
+          <a href="#share-section" class="gh-tab">
+            <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75zm-.25 1.75a.25.25 0 01.25-.25H5c.1 0 .2.05.25.1l.9 1.2c.33.44.85.7 1.4.7h5.7a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25H1.75a.25.25 0 01-.25-.25V2.75z"></path></svg>
+            Логи Directum
+          </a>
+        </nav>
+        <div class="rx-sidebar-info">
+          <span class="rx-sidebar-info-kicker">Локальная модель</span>
+          <strong class="rx-sidebar-info-title">Qwen3 8B · Ollama</strong>
+          <span class="rx-sidebar-info-note">Анализ выполняется на этом компьютере</span>
+        </div>
+      </aside>
 
-      <!-- НАВИГАЦИЯ -->
-      <nav class="gh-tabs">
-        <a href="#analyze-section" class="gh-tab active">
-          <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"></path></svg>
-          Анализ
-        </a>
-        <a href="#ci-section" class="gh-tab">
-          <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16zm.847-8.508a2.5 2.5 0 11-1.694-4.484 2.5 2.5 0 011.694 4.484zM8.5 14.5a6.5 6.5 0 100-13 6.5 6.5 0 000 13z"></path></svg>
-          CI/CD
-        </a>
-        <a href="#share-section" class="gh-tab">
-          <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75zm-.25 1.75a.25.25 0 01.25-.25H5c.1 0 .2.05.25.1l.9 1.2c.33.44.85.7 1.4.7h5.7a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25H1.75a.25.25 0 01-.25-.25V2.75z"></path></svg>
-          Логи Directum
-        </a>
-      </nav>
+      <!-- ОСНОВНАЯ РАБОЧАЯ ОБЛАСТЬ -->
+      <main class="workspace">
+        <div class="gh-page-heading">
+          <h1>Разбор инцидентов</h1>
+          <p>Автоматический анализ логов и CI/CD инцидентов с помощью локальной Qwen3 8B</p>
+        </div>
 
       <p id="startup-message" class="gh-alert" role="alert">Интерфейс ещё не запущен. Если сообщение не исчезает, обновите страницу сочетанием Ctrl+F5. Проверьте, что JavaScript разрешён; если кнопки не реагируют, откройте F12 → Console и передайте текст первой ошибки.</p>
       <div class="gh-content">
@@ -278,7 +288,8 @@
         <span>•</span>
         <span>Данные не сохраняются</span>
       </footer>
-    </main>
+      </main>
+    </div>
     <script src="/static/app.js?v=20261123-overview-1"></script>
   </body>
 </html>
