@@ -59,9 +59,9 @@
               </div>
 
               <div class="gh-form-group">
-                <label class="gh-label" for="log-file">JSON-файл лога</label>
+                <label class="gh-label" for="log-file">Файл лога (.json, .log, .txt)</label>
                 <div class="gh-upload-zone">
-                  <input id="log-file" name="file" type="file" accept="application/json,.json">
+                  <input id="log-file" name="file" type="file" accept=".json,.log,.txt,application/json,text/plain">
                   <span class="gh-upload-icon">↑</span>
                   <span class="gh-upload-text" id="file-name">Выберите файл или перетащите сюда</span>
                 </div>
@@ -148,7 +148,7 @@
             <!-- Сюда выводится сообщение об успехе или ошибке применения -->
             <p id="apply-message" class="gh-alert mt-2" role="alert" hidden></p>
             
-            <p class="gh-text-muted text-sm mt-2">Изменение не будет применено без вашего нажатия. Создается резервная копия.</p>
+            <p class="gh-text-muted text-sm mt-2">Изменение не будет применено без вашего нажатия. Резервные копии не создаются; для отката используйте Git.</p>
 
             <!-- Блок Git (появляется после успешного применения) -->
             <div id="git-actions" class="mt-4 pt-4 border-top" hidden>

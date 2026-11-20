@@ -1,12 +1,11 @@
 """HTTP API for Directum log analysis."""
 
-import json
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import ValidationError
+from app.log_input import read_log_upload
 
 from app.agent import FixProposalError, analyze_log, propose_fix
 from app.tools import validate_repository_root
@@ -19,7 +18,7 @@ from app.git_service import (
     github_checks,
     repository_status,
 )
-from app.schemas import ApplyFixRequest, ApplyFixResponse, AnalyzeResponse, FixProposal, LogPayload, PullRequestRequest
+from app.schemas import ApplyFixRequest, ApplyFixResponse, AnalyzeResponse, FixProposal, PullRequestRequest
 
 app = FastAPI(title="Directum Log Analyzer", version="0.1.0")
 app.mount("/static", StaticFiles(directory=Path(__file__).parent.parent / "static"), name="static")
@@ -165,23 +164,11 @@ async def analyze_endpoint(
 ) -> AnalyzeResponse:
     """Validate an uploaded JSON log and send it to the analysis agent."""
 
-    raw_data = await file.read()
-    if not raw_data.strip():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Файл лога пуст")
-
-    try:
-        parsed_data = json.loads(raw_data)
-        if parsed_data == {}:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Лог должен быть непустым JSON-объектом")
-        payload = LogPayload.model_validate(parsed_data)
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Файл содержит невалидный JSON") from None
-    except ValidationError as error:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=json.loads(error.json())) from None
+    payload = await read_log_upload(file)
 
     root = _repository_root(repo) if repo else None
     try:
-        result = analyze_log(payload.model_dump(exclude_none=True), repo_root=root)
+        result = analyze_log(payload, repo_root=root)
     except TimeoutError:
         raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Ollama не ответил вовремя") from None
     except ValueError as error:
@@ -201,17 +188,13 @@ async def propose_fix_endpoint(
 
     if not repo:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Для предложения исправления нужен repo")
-    raw_data = await file.read()
-    try:
-        payload = LogPayload.model_validate(json.loads(raw_data))
-    except (json.JSONDecodeError, UnicodeDecodeError, ValidationError):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Нужен корректный JSON-лог") from None
+    payload = await read_log_upload(file)
     root = _repository_root(repo)
     try:
         from app.config import get_settings
 
         settings = get_settings()
-        log_data = payload.model_dump(exclude_none=True)
+        log_data = payload
         analysis = analyze_log(log_data, repo_root=root, settings=settings)
         proposal = propose_fix(log_data, root, settings=settings)
         proposal.analysis = analysis
