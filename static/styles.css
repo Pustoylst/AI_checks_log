@@ -189,6 +189,70 @@ body {
   margin: 0;
   padding: 28px 32px;
 }
+.rx-breadcrumbs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 20px;
+  padding: 10px 14px;
+  background-color: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+}
+.rx-breadcrumb-trail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+}
+.rx-breadcrumb-link {
+  color: var(--gh-fg-muted);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.rx-breadcrumb-link:hover {
+  color: var(--gh-accent-fg);
+  text-decoration: underline;
+}
+.rx-breadcrumb-separator { color: var(--gh-fg-muted); }
+.rx-breadcrumb-current {
+  color: var(--gh-fg-default);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.rx-breadcrumb-back {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  color: var(--gh-accent-emphasis);
+  background-color: var(--gh-bg-subtle);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.rx-breadcrumb-back:hover {
+  background-color: var(--gh-accent-subtle);
+  border-color: var(--gh-accent-fg);
+  text-decoration: none;
+}
+.rx-breadcrumb-back[hidden] { display: none !important; }
+
+/* Панели результата и diff относятся только к экрану «Анализ». */
+body.rx-view-ci #result-panel,
+body.rx-view-share #result-panel,
+body.rx-view-ci #proposal-panel,
+body.rx-view-share #proposal-panel { display: none !important; }
+
 .gh-page-heading h1 {
   font-size: 28px; font-weight: 600; line-height: 1.25; letter-spacing: -0.01em;
   margin: 0 0 8px 0;
@@ -855,6 +919,7 @@ input[type="radio"]:focus-visible {
   }
   .rx-sidebar-info { margin-top: 4px; }
   .workspace { max-width: none; padding: 24px 20px 40px; }
+  .rx-breadcrumbs { align-items: flex-start; flex-direction: column; }
 }
 
 @media (max-width: 768px) {

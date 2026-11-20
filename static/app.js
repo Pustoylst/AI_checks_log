@@ -769,3 +769,112 @@ prButton.addEventListener("click", async () => {
 
 // Hide only after all event handlers have been registered successfully.
 document.querySelector("#startup-message").hidden = true;
+
+// ==========================================================================
+// 6. ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ (Directum RX)
+// Изолированный блок: не меняет обработчики запросов и безопасен без window.
+// ==========================================================================
+(function initViewSwitcher() {
+  try {
+    const views = Array.from(document.querySelectorAll("[data-rx-view]"));
+    const tabs = Array.from(document.querySelectorAll(".gh-tab"));
+    const homeLinks = Array.from(document.querySelectorAll("[data-rx-home]"));
+    const breadcrumbCurrent = document.querySelector("#rx-breadcrumb-current");
+    const backLink = document.querySelector("#rx-back-to-analyze");
+
+    const labels = {
+      analyze: "Анализ логов",
+      ci: "CI/CD",
+      share: "Логи Directum",
+    };
+    const hashToView = {
+      "#analyze-section": "analyze",
+      "#ci-section": "ci",
+      "#share-section": "share",
+    };
+    const viewToHash = {
+      analyze: "#analyze-section",
+      ci: "#ci-section",
+      share: "#share-section",
+    };
+
+    function applyView(requestedView) {
+      const target = labels[requestedView] ? requestedView : "analyze";
+
+      views.forEach((section) => {
+        section.hidden = section.getAttribute("data-rx-view") !== target;
+      });
+
+      tabs.forEach((tab) => {
+        const tabView = tab.getAttribute("data-rx-view-target");
+        const isActive = tabView === target;
+        if (tab.classList) {
+          tab.classList.toggle("active", isActive);
+        }
+        if (isActive) {
+          tab.setAttribute("aria-current", "page");
+        } else {
+          tab.removeAttribute("aria-current");
+        }
+      });
+
+      if (breadcrumbCurrent) {
+        breadcrumbCurrent.textContent = labels[target];
+      }
+      if (backLink) {
+        backLink.hidden = target === "analyze";
+      }
+
+      if (document.body && document.body.classList) {
+        document.body.classList.remove("rx-view-analyze", "rx-view-ci", "rx-view-share");
+        document.body.classList.add(`rx-view-${target}`);
+      }
+
+      if (typeof window !== "undefined") {
+        try {
+          if (window.history && typeof window.history.replaceState === "function") {
+            window.history.replaceState(null, "", viewToHash[target]);
+          } else if (window.location) {
+            window.location.hash = viewToHash[target];
+          }
+        } catch (error) {
+          // Hash is optional; switching must still work in restricted contexts.
+        }
+        if (typeof window.scrollTo === "function") {
+          try {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } catch (error) {
+            window.scrollTo(0, 0);
+          }
+        }
+      }
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", (event) => {
+        event.preventDefault();
+        applyView(tab.getAttribute("data-rx-view-target") || "analyze");
+      });
+    });
+
+    homeLinks.forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        applyView("analyze");
+      });
+    });
+
+    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+      window.addEventListener("hashchange", () => {
+        applyView(hashToView[window.location.hash] || "analyze");
+      });
+    }
+
+    const initialView = typeof window !== "undefined" && window.location
+      ? hashToView[window.location.hash] || "analyze"
+      : "analyze";
+    applyView(initialView);
+  } catch (error) {
+    console.warn("Не удалось инициализировать переключение экранов.", error);
+  }
+})();
