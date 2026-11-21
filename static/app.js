@@ -774,32 +774,36 @@ document.querySelector("#startup-message").hidden = true;
 // 6. ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ (Directum RX)
 // Изолированный блок: не меняет обработчики запросов и безопасен без window.
 // ==========================================================================
-(function initViewSwitcher() {
+function initViewSwitcher() {
   try {
     const views = Array.from(document.querySelectorAll("[data-rx-view]"));
     const tabs = Array.from(document.querySelectorAll(".gh-tab"));
     const homeLinks = Array.from(document.querySelectorAll("[data-rx-home]"));
+    const moduleLinks = Array.from(document.querySelectorAll("[data-rx-target]"));
     const breadcrumbCurrent = document.querySelector("#rx-breadcrumb-current");
     const backLink = document.querySelector("#rx-back-to-analyze");
 
     const labels = {
+      home: "Обзор",
       analyze: "Анализ логов",
       ci: "CI/CD",
       share: "Логи Directum",
     };
     const hashToView = {
+      "#home-section": "home",
       "#analyze-section": "analyze",
       "#ci-section": "ci",
       "#share-section": "share",
     };
     const viewToHash = {
+      home: "#home-section",
       analyze: "#analyze-section",
       ci: "#ci-section",
       share: "#share-section",
     };
 
     function applyView(requestedView) {
-      const target = labels[requestedView] ? requestedView : "analyze";
+      const target = labels[requestedView] ? requestedView : "home";
 
       views.forEach((section) => {
         section.hidden = section.getAttribute("data-rx-view") !== target;
@@ -822,11 +826,11 @@ document.querySelector("#startup-message").hidden = true;
         breadcrumbCurrent.textContent = labels[target];
       }
       if (backLink) {
-        backLink.hidden = target === "analyze";
+        backLink.hidden = target === "home";
       }
 
       if (document.body && document.body.classList) {
-        document.body.classList.remove("rx-view-analyze", "rx-view-ci", "rx-view-share");
+        document.body.classList.remove("rx-view-home", "rx-view-analyze", "rx-view-ci", "rx-view-share");
         document.body.classList.add(`rx-view-${target}`);
       }
 
@@ -842,7 +846,7 @@ document.querySelector("#startup-message").hidden = true;
         }
         if (typeof window.scrollTo === "function") {
           try {
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            window.scrollTo({ top: 0, behavior: "instant" });
           } catch (error) {
             window.scrollTo(0, 0);
           }
@@ -853,28 +857,37 @@ document.querySelector("#startup-message").hidden = true;
     tabs.forEach((tab) => {
       tab.addEventListener("click", (event) => {
         event.preventDefault();
-        applyView(tab.getAttribute("data-rx-view-target") || "analyze");
+        applyView(tab.getAttribute("data-rx-view-target") || "home");
       });
     });
 
     homeLinks.forEach((link) => {
       link.addEventListener("click", (event) => {
         event.preventDefault();
-        applyView("analyze");
+        applyView("home");
+      });
+    });
+
+    moduleLinks.forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        applyView(link.getAttribute("data-rx-target") || "home");
       });
     });
 
     if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
       window.addEventListener("hashchange", () => {
-        applyView(hashToView[window.location.hash] || "analyze");
+        applyView(hashToView[window.location.hash] || "home");
       });
     }
 
     const initialView = typeof window !== "undefined" && window.location
-      ? hashToView[window.location.hash] || "analyze"
-      : "analyze";
+      ? hashToView[window.location.hash] || "home"
+      : "home";
     applyView(initialView);
   } catch (error) {
     console.warn("Не удалось инициализировать переключение экранов.", error);
   }
-})();
+}
+
+initViewSwitcher();
