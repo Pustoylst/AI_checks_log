@@ -757,19 +757,161 @@ input[type="radio"]:focus-visible {
 .gh-markdown-body code { font-family: var(--gh-font-mono); font-size: 85%; background-color: rgba(110,118,129,0.4); padding: 0.2em 0.4em; border-radius: 6px; }
 .gh-markdown-body pre code { background-color: transparent; padding: 0; }
 
+/* --- РЕЗУЛЬТАТ АНАЛИЗА И ПРОВЕРКА ИЗМЕНЕНИЯ --- */
+#result-panel,
+#proposal-panel { border-left: 3px solid var(--gh-accent-fg); }
+
+#result-time {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  color: var(--gh-accent-emphasis);
+  background-color: var(--gh-accent-subtle);
+  border: 1px solid rgba(243, 112, 33, 0.28);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+#result-content {
+  max-height: 620px;
+  padding: 16px 20px;
+  overflow: auto;
+  color: var(--gh-fg-default);
+  background-color: var(--gh-bg-subtle);
+  border: 1px solid var(--gh-border-muted);
+  border-radius: 6px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+#result-content > pre {
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+#proposal-explanation {
+  color: var(--gh-fg-default);
+  line-height: 1.6;
+}
+#proposal-explanation > pre {
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+#proposal-path {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 0 16px;
+  padding: 4px 10px;
+  overflow-wrap: anywhere;
+  color: var(--gh-fg-default);
+  background-color: var(--gh-bg-subtle);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 5px;
+  font-family: var(--gh-font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 /* --- DIFF --- */
 .gh-diff-container {
-  border: 1px solid var(--gh-border-default); border-radius: 6px; overflow: hidden; margin: 16px 0;
+  margin: 16px 0;
+  overflow: hidden;
+  background-color: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
 }
-.gh-diff-header { display: flex; background-color: var(--gh-bg-default); border-bottom: 1px solid var(--gh-border-default); }
-.gh-diff-col { flex: 1; padding: 8px 16px; font-weight: 600; font-size: 12px; color: var(--gh-fg-muted); }
-.gh-diff-body { display: flex; }
-.gh-diff-side { flex: 1; overflow-x: auto; font-family: var(--gh-font-mono); font-size: 12px; line-height: 20px; }
-.gh-diff-side pre { margin: 0; padding: 8px 16px; white-space: pre-wrap; }
-.gh-diff-removed { background-color: rgba(248, 81, 73, 0.1); border-right: 1px solid var(--gh-border-default); }
-.gh-diff-removed pre { color: #ff7b72; }
-.gh-diff-added { background-color: rgba(63, 185, 80, 0.1); }
-.gh-diff-added pre { color: #7ee787; }
+.gh-diff-header {
+  display: flex;
+  background-color: var(--gh-bg-subtle);
+  border-bottom: 1px solid var(--gh-border-muted);
+}
+.gh-diff-col {
+  flex: 1;
+  padding: 9px 16px;
+  color: var(--gh-fg-default);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.gh-diff-body {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--gh-bg-default);
+}
+.gh-diff-side { flex: 1; min-width: 0; }
+.gh-diff-side pre { margin: 0; padding: 0; white-space: pre-wrap; }
+.gh-diff-removed,
+.gh-diff-added { background: transparent; border: 0; }
+#old-text,
+#new-text {
+  max-height: 360px;
+  padding: 16px 18px;
+  overflow: auto;
+  border-radius: 6px;
+  font-family: var(--gh-font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+#old-text {
+  color: #6B1F24;
+  background-color: #FFF5F5;
+  border: 1px solid #F5C2C7;
+  border-left: 3px solid #D93025;
+}
+#new-text {
+  color: #14532D;
+  background-color: #F2FBF5;
+  border: 1px solid #BCE3C8;
+  border-left: 3px solid #1E8E3E;
+}
+
+/* --- ФИНАЛЬНАЯ СЕКЦИЯ GIT / PULL REQUEST --- */
+#git-actions {
+  margin-top: 24px;
+  padding: 18px;
+  background-color: var(--gh-bg-subtle);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+}
+#git-actions h2 {
+  margin: 0 0 14px;
+  color: var(--gh-fg-default);
+  font-size: 16px;
+}
+#git-actions .gh-form-group { margin-bottom: 16px; }
+#git-actions #pr-button { margin-top: 4px; }
+#pr-success-banner {
+  margin-top: 16px;
+  padding: 12px 14px;
+  color: #14532D;
+  background-color: #F2FBF5;
+  border: 1px solid #BCE3C8;
+  border-left: 3px solid var(--gh-success-fg);
+  border-radius: 6px;
+}
+#pr-success-banner .gh-link { color: var(--gh-success-fg); }
+
+#result-panel[hidden],
+#proposal-panel[hidden],
+#git-actions[hidden] { display: none !important; }
 
 /* --- ЛОГИ ИЗ СЕТЕВОЙ ПАПКИ --- */
 .share-file-list {
@@ -1146,6 +1288,5 @@ input[type="radio"]:focus-visible {
   .share-drilldown-row { flex-direction: column; align-items: flex-start; }
   .share-drilldown-row .gh-btn { margin-left: 0; }
   .gh-diff-body { flex-direction: column; }
-  .gh-diff-removed { border-right: none; border-bottom: 1px solid var(--gh-border-default); }
   .flex-between { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
