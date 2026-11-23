@@ -842,6 +842,28 @@ input[type="radio"]:focus-visible {
 }
 
 /* --- ОБЩАЯ СВОДКА ПО ЛОГАМ ИЗ СЕТЕВОЙ ПАПКИ --- */
+.rx-section-title { min-width: 0; }
+.rx-section-title h2 { margin: 0; }
+.rx-section-title p {
+  margin: 4px 0 0;
+  color: var(--gh-fg-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.share-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.share-control-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+@media (min-width: 1101px) {
+  .share-layout-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 #share-root {
   display: inline-block;
   max-width: 100%;
@@ -854,16 +876,29 @@ input[type="radio"]:focus-visible {
   font-family: var(--gh-font-mono);
   font-size: 12px;
 }
-.share-overview-box {
+.share-overview-box,
+.share-detail-box {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 20px;
   border: 1px solid var(--gh-border-default);
   border-radius: 6px;
   background-color: var(--gh-bg-subtle);
 }
-.share-overview-box > h3 { margin-top: 0; color: var(--gh-fg-default); }
-.share-overview-box .gh-form-group { margin-bottom: 16px; }
+.share-overview-box > h3,
+.share-detail-box > h3 { margin-top: 0; color: var(--gh-fg-default); }
+.share-overview-box .gh-form-group,
+.share-detail-box .gh-form-group { margin-bottom: 16px; }
 #share-overview-limit { max-width: 400px; }
-.share-overview-box .gh-actions { align-items: center; gap: 10px; margin-top: 16px; }
+.share-overview-box .gh-actions,
+.share-detail-box .gh-actions {
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+#share-files { margin-top: 20px; }
 #share-overview-panel {
   margin-top: 20px;
   padding: 18px;
@@ -912,6 +947,31 @@ input[type="radio"]:focus-visible {
   border-radius: 6px;
   font-size: 13px;
 }
+.share-callout {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  background-color: var(--gh-bg-subtle);
+  border: 1px solid var(--gh-border-default);
+  border-left: 3px solid var(--gh-accent-fg);
+  border-radius: 6px;
+}
+.share-callout-icon {
+  display: flex;
+  flex: 0 0 auto;
+  padding-top: 1px;
+  color: var(--gh-accent-fg);
+}
+.share-callout-icon .octicon { fill: currentColor; }
+.share-callout-text { min-width: 0; }
+.share-callout-text p {
+  margin: 0 0 8px;
+  color: var(--gh-fg-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.share-callout-text p:last-child { margin-bottom: 0; }
 
 /* Реестр файлов для детального анализа */
 .share-drilldown-list {
