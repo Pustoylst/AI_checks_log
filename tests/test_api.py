@@ -22,9 +22,22 @@ def test_frontend_is_served() -> None:
     assert response.status_code == 200
     assert "Разбор инцидентов" in response.text
     assert "Qwen3 8B" in response.text
+    assert "Логи Directum" in response.text
+    assert 'id="share-section"' in response.text
+    assert "Показать выжимку" in response.text
+    assert "Проанализировать все логи" in response.text
+    assert "Только сводка без модели" in response.text
+    assert 'id="share-focus"' in response.text
+    assert 'id="share-overview-button"' in response.text
+    assert 'id="share-overview-preview-button"' in response.text
+    assert 'id="share-question"' in response.text
     assert 'src="https://' not in response.text
     assert 'href="https://' not in response.text
-    assert client.get("/static/app.js").status_code == 200
+    script = client.get("/static/app.js")
+    assert script.status_code == 200
+    assert "/logs/share/files" in script.text
+    assert "/logs/share/preprocess" in script.text
+    assert "/logs/share/overview" in script.text
     assert client.get("/static/styles.css").status_code == 200
 
 

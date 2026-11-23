@@ -163,6 +163,58 @@ body {
 .gh-diff-added { background-color: rgba(63, 185, 80, 0.1); }
 .gh-diff-added pre { color: #7ee787; }
 
+/* --- ЛОГИ ИЗ СЕТЕВОЙ ПАПКИ --- */
+.share-file-list {
+  max-height: 360px; overflow-y: auto;
+  border: 1px solid var(--gh-border-default); border-radius: 6px;
+  background-color: var(--gh-bg-inset);
+}
+.share-file-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-bottom: 1px solid var(--gh-border-muted);
+}
+.share-file-row:last-child { border-bottom: none; }
+.share-file-row:hover { background-color: var(--gh-btn-bg); }
+.share-file-info {
+  display: flex; align-items: center; gap: 10px;
+  flex: 1; min-width: 0; cursor: pointer;
+}
+.share-file-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.share-file-name {
+  font-family: var(--gh-font-mono); font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.share-file-meta { color: var(--gh-fg-muted); font-size: 12px; }
+.share-overview-box {
+  padding: 16px;
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+  background-color: var(--gh-bg-inset);
+}
+.share-divider {
+  margin: 20px 0;
+  border-top: 1px solid var(--gh-border-muted);
+}
+.share-drilldown-list {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.share-drilldown-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--gh-border-muted);
+  border-radius: 6px;
+  background-color: var(--gh-bg-default);
+}
+.share-drilldown-text {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.share-drilldown-path {
+  font-family: var(--gh-font-mono); font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.share-drilldown-meta { color: var(--gh-fg-muted); font-size: 12px; }
+
 /* --- УТИЛИТЫ --- */
 .gh-alert { color: var(--gh-danger-fg); font-size: 14px; margin: 8px 0; }
 .gh-text-muted { color: var(--gh-fg-muted); }

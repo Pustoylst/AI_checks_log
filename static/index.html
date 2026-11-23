@@ -41,8 +41,13 @@
           <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16zm.847-8.508a2.5 2.5 0 11-1.694-4.484 2.5 2.5 0 011.694 4.484zM8.5 14.5a6.5 6.5 0 100-13 6.5 6.5 0 000 13z"></path></svg>
           CI/CD
         </a>
+        <a href="#share-section" class="gh-tab">
+          <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75zm-.25 1.75a.25.25 0 01.25-.25H5c.1 0 .2.05.25.1l.9 1.2c.33.44.85.7 1.4.7h5.7a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25H1.75a.25.25 0 01-.25-.25V2.75z"></path></svg>
+          Логи Directum
+        </a>
       </nav>
 
+      <p id="startup-message" class="gh-alert" role="alert">Интерфейс ещё не запущен. Если сообщение не исчезает, обновите страницу сочетанием Ctrl+F5. Проверьте, что JavaScript разрешён; если кнопки не реагируют, откройте F12 → Console и передайте текст первой ошибки.</p>
       <div class="gh-content">
         
         <!-- БЛОК 1: Анализ лога -->
@@ -94,7 +99,98 @@
           </div>
         </section>
 
-        <!-- БЛОК 3: Результат анализа -->
+        <!-- БЛОК 3: Логи из сетевой папки Directum -->
+        <section id="share-section" class="gh-box mt-4">
+          <div class="gh-box-header flex-between">
+            <h2>Логи Directum из сетевой папки</h2>
+            <div class="gh-actions">
+              <button id="share-refresh-button" class="gh-btn" type="button">
+                <span>Обновить список</span>
+                <span class="spinner" hidden></span>
+              </button>
+            </div>
+          </div>
+          <div class="gh-box-body">
+            <p class="gh-text-muted text-sm">
+              Источник: <code id="share-root">\\192.168.240.2\Logs</code>
+            </p>
+            <p id="share-message" class="gh-alert" role="alert" hidden></p>
+
+            <div class="share-overview-box">
+              <h3 class="text-lg font-semibold">Сначала — общая картина</h3>
+              <p class="gh-text-muted text-sm">
+                Сервис просканирует выбранные логи, объединит повторяющиеся ошибки и покажет,
+                что происходит в целом. После этого можно открыть отдельный файл для детального разбора.
+              </p>
+              <div class="gh-form-group mt-2">
+                <label class="gh-label" for="share-overview-limit">Охват</label>
+                <select id="share-overview-limit" class="gh-input">
+                  <option value="100">Последние 100 файлов</option>
+                  <option value="300">Последние 300 файлов</option>
+                  <option value="0" selected>Все файлы (до лимита настройки)</option>
+                </select>
+              </div>
+              <div class="gh-actions mt-3">
+                <button id="share-overview-button" class="gh-btn gh-btn-primary" type="button">
+                  <span>Проанализировать все логи</span>
+                  <span class="spinner" hidden></span>
+                </button>
+                <button id="share-overview-preview-button" class="gh-btn" type="button">
+                  <span>Только сводка без модели</span>
+                  <span class="spinner" hidden></span>
+                </button>
+                <button id="share-overview-analyze-button" class="gh-btn" type="button" disabled>
+                  <span>Проанализировать сводку</span>
+                  <span class="spinner" hidden></span>
+                </button>
+              </div>
+              <p id="share-overview-message" class="gh-alert" role="alert" hidden></p>
+              <div id="share-overview-panel" class="mt-4" hidden>
+                <h3 id="share-overview-title" class="text-lg font-semibold mb-3">Сводка по всем логам</h3>
+                <p id="share-overview-stats" class="gh-text-muted text-sm" hidden></p>
+                <div id="share-overview-report" class="gh-markdown-body"></div>
+                <div id="share-overview-analysis" class="gh-markdown-body mt-4" hidden></div>
+                <div id="share-overview-drilldown" class="mt-4" hidden></div>
+              </div>
+            </div>
+
+            <div class="share-divider"></div>
+
+            <h3 class="text-lg font-semibold">Детальный анализ одного лога</h3>
+            <div id="share-files" class="share-file-list" hidden></div>
+            <div class="gh-form-group mt-3">
+              <label class="gh-label" for="share-focus">Режим предобработки</label>
+              <select id="share-focus" class="gh-input">
+                <option value="errors" selected>Ошибки и предупреждения (рекомендуется)</option>
+                <option value="all">Все уровни и топ сообщений</option>
+              </select>
+            </div>
+            <div class="gh-form-group mt-3">
+              <label class="gh-label" for="share-question">Что именно проверить в выбранном логе? <span class="gh-optional">(необязательно)</span></label>
+              <input id="share-question" class="gh-input" type="text" maxlength="2000" placeholder="Например: почему повторяется BrokerNotAvailableException?" autocomplete="off">
+            </div>
+            <div class="gh-actions mt-3">
+              <button id="share-preprocess-button" class="gh-btn" type="button" disabled>
+                <span>Показать выжимку</span>
+                <span class="spinner" hidden></span>
+              </button>
+              <button id="share-analyze-button" class="gh-btn gh-btn-primary" type="button" disabled>
+                <span>Анализировать выбранный лог</span>
+                <span class="spinner" hidden></span>
+              </button>
+            </div>
+            <div id="share-result-panel" class="mt-4" hidden>
+              <h3 id="share-result-title" class="text-lg font-semibold mb-3">Результат анализа</h3>
+              <p id="share-result-source" class="gh-text-muted text-sm" hidden></p>
+              <p id="share-stats" class="gh-text-muted text-sm" hidden></p>
+              <div id="share-result" class="gh-markdown-body"></div>
+            </div>
+            <p class="gh-text-muted text-sm mt-3">Большие логи автоматически сворачиваются в выжимку: счётчики уровней, уникальные ошибки, стеки и контекст. В модель уходят килобайты вместо сотен мегабайт. Файлы читаются напрямую из сетевой папки и не копируются в репозиторий. Используются права учётной записи, под которой запущен сервис.</p>
+            <p class="gh-text-muted text-sm">Для этого источника доступны список, скачивание, выжимка и анализ; предложение исправления подключим следующим шагом.</p>
+          </div>
+        </section>
+
+        <!-- БЛОК 4: Результат анализа -->
         <section id="result-panel" class="gh-box mt-4" hidden>
           <div class="gh-box-header flex-between">
             <h2>Результат анализа</h2>
@@ -111,7 +207,7 @@
           </div>
         </section>
 
-        <!-- БЛОК 4: Проверка исправления (Diff) -->
+        <!-- БЛОК 5: Проверка исправления (Diff) -->
         <section id="proposal-panel" class="gh-box mt-4" hidden>
           <div class="gh-box-header">
             <h2>Проверка изменения</h2>
@@ -183,6 +279,6 @@
         <span>Данные не сохраняются</span>
       </footer>
     </main>
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=20261123-overview-1"></script>
   </body>
 </html>

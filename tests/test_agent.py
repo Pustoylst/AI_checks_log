@@ -44,6 +44,20 @@ def test_agent_calls_read_git_file_and_uses_result(tmp_path: Path) -> None:
     assert any("known failure" in str(message.content) for message in model.seen_messages[1])
 
 
+def test_agent_marks_preprocessed_report_as_excerpt() -> None:
+    model = FakeModel([AIMessage(content="Готовая выжимка проанализирована.")])
+
+    analyze_log(
+        {"log_format": "preprocessed", "report": "## Ошибки\n\nRabbitMQ is not available"},
+        settings=Settings(_env_file=None),
+        model_factory=lambda settings, model_name: model,
+    )
+
+    first_message = str(model.seen_messages[0][1].content)
+    assert "автоматическая выжимка" in first_message
+    assert "не полный файл" in first_message
+
+
 def test_local_failure_does_not_retry_cloud() -> None:
     import pytest
     calls = []
@@ -116,3 +130,39 @@ def test_agent_normalizes_report_into_fix_proposal(tmp_path: Path) -> None:
     )
 
     assert proposal.new_text == "return left - right"
+
+def test_agent_marks_overview_as_aggregate_and_uses_only_report() -> None:
+    model = FakeModel([AIMessage(content="Главная проблема — RabbitMQ.")])
+
+    analyze_log(
+        {
+            "log_format": "overview",
+            "report": "# Общая сводка\n\nRabbitMQ is not available",
+            "stats": {"files_scanned": 600},
+        },
+        settings=Settings(_env_file=None),
+        model_factory=lambda settings, model_name: model,
+    )
+
+    first_message = str(model.seen_messages[0][1].content)
+    assert "общая сводка по многим файлам" in first_message
+    assert "какие конкретные файлы" in first_message
+    assert "RabbitMQ is not available" in first_message
+    assert "files_scanned" not in first_message
+
+
+def test_agent_includes_follow_up_question() -> None:
+    model = FakeModel([AIMessage(content="Ответ по вопросу.")])
+
+    analyze_log(
+        {
+            "log_format": "preprocessed",
+            "report": "## Ошибки\n\nRabbitMQ is not available",
+            "question": "Почему RabbitMQ недоступен?",
+        },
+        settings=Settings(_env_file=None),
+        model_factory=lambda settings, model_name: model,
+    )
+
+    first_message = str(model.seen_messages[0][1].content)
+    assert "Почему RabbitMQ недоступен?" in first_message

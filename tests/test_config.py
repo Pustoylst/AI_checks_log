@@ -9,6 +9,14 @@ def test_default_local_settings():
     assert settings.ollama_base_url == "http://127.0.0.1:11434"
     assert settings.ollama_num_ctx == 8192
     assert settings.ollama_timeout_seconds == 180
+    assert settings.log_share_path == r"\\192.168.240.2\Logs"
+    assert settings.log_share_max_files == 200
+    assert settings.log_share_scan_limit == 5000
+    assert settings.log_preprocess_budget_chars == 14000
+    assert settings.log_preprocess_max_bytes == 512 * 1024 * 1024
+    assert settings.log_overview_budget_chars == 16000
+    assert settings.log_overview_max_files == 1000
+    assert settings.log_overview_max_bytes == 3 * 1024 * 1024 * 1024
 
 
 @pytest.mark.parametrize("url", ["https://example.org", "http://192.168.1.2:11434", "http://user:pass@localhost:11434", "http://localhost/api"])

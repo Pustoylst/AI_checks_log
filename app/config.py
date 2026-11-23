@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     github_default_branch: str = "main"
     ci_poll_interval_seconds: int = 60
     ci_state_dir: str = "../agent-ci-runtime"
+    log_share_path: str = r"\\192.168.240.2\Logs"
+    log_share_max_files: int = Field(default=200, ge=1, le=1000)
+    log_share_scan_limit: int = Field(default=5000, ge=1, le=100000)
+    log_preprocess_budget_chars: int = Field(default=14000, ge=4000, le=60000)
+    log_preprocess_max_bytes: int = Field(default=512 * 1024 * 1024, ge=1024 * 1024)
+    log_overview_budget_chars: int = Field(default=16000, ge=4000, le=60000)
+    log_overview_max_files: int = Field(default=1000, ge=1, le=5000)
+    log_overview_max_bytes: int = Field(default=3 * 1024 * 1024 * 1024, ge=1024 * 1024)
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore", case_sensitive=False,
