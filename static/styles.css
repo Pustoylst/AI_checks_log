@@ -36,7 +36,20 @@
   --gh-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gh-border-default) var(--gh-bg-subtle);
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: var(--gh-bg-subtle); }
+*::-webkit-scrollbar-thumb {
+  background-color: var(--gh-border-default);
+  border: 2px solid var(--gh-bg-subtle);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover { background-color: var(--gh-fg-muted); }
+::selection { background: var(--gh-accent-subtle); }
 
 body {
   margin: 0;
@@ -413,7 +426,7 @@ body:not(.rx-view-analyze) #proposal-panel { display: none !important; }
 .gh-tabs {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   overflow: visible;
@@ -421,36 +434,80 @@ body:not(.rx-view-analyze) #proposal-panel { display: none !important; }
   border: 0;
 }
 .gh-tab {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   width: 100%;
   margin: 0;
-  padding: 10px 14px;
+  padding: 10px 12px;
   color: var(--gh-fg-default);
   background: transparent;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   line-height: 1.4;
   text-decoration: none;
   white-space: normal;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    color 0.2s ease, box-shadow 0.2s ease;
 }
 .gh-tab:hover {
-  color: var(--gh-accent-emphasis);
+  color: var(--gh-fg-default);
   background-color: var(--gh-bg-subtle);
+  border-color: var(--gh-border-default);
 }
 .gh-tab.active {
   color: var(--gh-accent-fg);
   background-color: var(--gh-accent-subtle);
+  border-color: rgba(243, 112, 33, 0.28);
   box-shadow: inset 3px 0 0 var(--gh-accent-fg);
+}
+.rx-nav-icon {
+  display: inline-flex;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--gh-fg-default);
+  background-color: var(--gh-bg-subtle);
+  border-radius: 7px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.gh-tab .octicon { width: 16px; height: 16px; fill: currentColor; }
+.gh-tab:hover .rx-nav-icon {
+  color: var(--gh-accent-emphasis);
+  background-color: var(--gh-bg-default);
+}
+.gh-tab.active .rx-nav-icon {
+  color: #FFFFFF;
+  background-color: var(--gh-accent-fg);
+}
+.rx-nav-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.rx-nav-title {
+  color: var(--gh-fg-default);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.rx-nav-subtitle {
+  color: var(--gh-fg-muted);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+.gh-tab:hover .rx-nav-title { color: var(--gh-accent-emphasis); }
+.gh-tab.active .rx-nav-title {
+  color: var(--gh-accent-emphasis);
   font-weight: 600;
 }
-.gh-tab .octicon { flex: 0 0 auto; fill: currentColor; opacity: 0.8; }
-.gh-tab:hover .octicon, .gh-tab.active .octicon { opacity: 1; }
-.gh-tab.active .octicon { fill: var(--gh-accent-fg); }
 
 /* --- КАРТОЧКИ --- */
 .gh-box {
@@ -1213,6 +1270,15 @@ input[type="radio"]:focus-visible {
 
 /* --- УТИЛИТЫ --- */
 .gh-alert { color: var(--gh-danger-fg); font-size: 14px; margin: 8px 0; }
+#form-message:empty,
+#ci-message:empty,
+#share-message:empty,
+#apply-message:empty {
+  display: none !important;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
 .gh-text-muted { color: var(--gh-fg-muted); }
 .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 24px; }
 .pt-4 { padding-top: 24px; } .mb-3 { margin-bottom: 12px; }
@@ -1254,7 +1320,17 @@ input[type="radio"]:focus-visible {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* --- ПОДВАЛ И АДАПТИВНОСТЬ --- */
-.gh-footer { display: flex; gap: 12px; justify-content: center; padding: 40px 0 20px; font-size: 12px; color: var(--gh-fg-muted); }
+.gh-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 32px;
+  padding: 18px 0 8px;
+  border-top: 1px solid var(--gh-border-muted);
+  font-size: 12px;
+  color: var(--gh-fg-muted);
+}
 
 @media (max-width: 900px) {
   .rx-shell { flex-direction: column; min-height: 0; }
