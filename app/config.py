@@ -1,6 +1,7 @@
 """Application configuration loaded from environment variables."""
 
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import urlparse
 
 from pydantic import Field, SecretStr, field_validator
@@ -28,6 +29,7 @@ class Settings(BaseSettings):
     log_overview_budget_chars: int = Field(default=16000, ge=4000, le=60000)
     log_overview_max_files: int = Field(default=1000, ge=1, le=5000)
     log_overview_max_bytes: int = Field(default=3 * 1024 * 1024 * 1024, ge=1024 * 1024)
+    directum_docs_path: Path = Path(__file__).resolve().parents[2] / "rx262"
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore", case_sensitive=False,
