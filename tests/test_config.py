@@ -18,6 +18,9 @@ def test_default_local_settings():
     assert settings.log_overview_max_files == 1000
     assert settings.log_overview_max_bytes == 3 * 1024 * 1024 * 1024
     assert settings.directum_docs_path.name == "rx262"
+    assert settings.rag_vector_enabled is True
+    assert settings.rag_embedding_model == "bge-m3:latest"
+    assert settings.rag_vector_min_similarity == 0.45
 
 
 @pytest.mark.parametrize("url", ["https://example.org", "http://192.168.1.2:11434", "http://user:pass@localhost:11434", "http://localhost/api"])

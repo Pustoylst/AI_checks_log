@@ -6,7 +6,17 @@ from langchain_core.messages import AIMessage
 from app.agent import analyze_log
 from app.config import Settings
 from app.documentation_rag import build_documentation_tool
+import pytest
 
+
+@pytest.fixture(autouse=True)
+def lexical_only(monkeypatch):
+    # Existing lexical/agent tests must not depend on a running local model.
+    monkeypatch.setenv("RAG_VECTOR_ENABLED", "false")
+    from app.config import get_settings
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 def test_documentation_search_returns_relevant_html_excerpt(tmp_path: Path) -> None:
     docs = tmp_path / "rx262"

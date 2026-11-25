@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     log_overview_max_files: int = Field(default=1000, ge=1, le=5000)
     log_overview_max_bytes: int = Field(default=3 * 1024 * 1024 * 1024, ge=1024 * 1024)
     directum_docs_path: Path = Path(__file__).resolve().parents[2] / "rx262"
+    rag_vector_enabled: bool = True
+    rag_embedding_model: str = "bge-m3:latest"
+    rag_embedding_batch_size: int = Field(default=16, ge=1, le=128)
+    rag_vector_min_similarity: float = Field(default=0.45, ge=0, le=1)
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore", case_sensitive=False,

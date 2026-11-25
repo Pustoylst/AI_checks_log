@@ -1,4 +1,4 @@
-"""Local full-text retrieval over the Directum RX HTML documentation."""
+"""Local hybrid BM25 and BGE-M3 retrieval over Directum RX HTML documentation."""
 
 from html.parser import HTMLParser
 import hashlib
@@ -8,6 +8,11 @@ import re
 import sqlite3
 import tempfile
 from threading import RLock
+import logging
+
+import httpx
+from app.config import Settings, get_settings
+from app.documentation_vectors import VectorSearchError, vector_search, fuse_results
 
 from langchain_core.tools import tool
 
@@ -164,7 +169,7 @@ def _connect(index_path: Path) -> sqlite3.Connection:
     return connection
 
 
-def _refresh_index(root: Path, connection: sqlite3.Connection) -> None:
+def _refresh_index(root: Path, connection: sqlite3.Connection, *, force: bool = False) -> None:
     files = sorted(
         (path for path in root.rglob("*") if path.is_file() and path.suffix.casefold() in {".htm", ".html"}),
         key=lambda path: path.as_posix().casefold(),
@@ -190,7 +195,7 @@ def _refresh_index(root: Path, connection: sqlite3.Connection) -> None:
         connection.execute("DELETE FROM documents WHERE path = ?", (relative,))
 
     for relative, (path, size, modified_ns) in current.items():
-        if indexed.get(relative) == (size, modified_ns):
+        if not force and indexed.get(relative) == (size, modified_ns):
             continue
         title, description, chunks = _read_document(path)
         connection.execute("DELETE FROM chunks WHERE path = ?", (relative,))
@@ -206,66 +211,65 @@ def _refresh_index(root: Path, connection: sqlite3.Connection) -> None:
         )
 
 
-def _search_index(root_text: str, query: str) -> tuple[tuple[str, str, str], ...]:
+def _search_index(root_text: str, query: str, settings: Settings, status: list[str]):
     root = Path(root_text)
     if not root.is_dir():
         raise FileNotFoundError(f"Папка документации Directum RX не найдена: {root}")
-
-    words = []
-    for word in _WORD_RE.findall(query.casefold()):
-        if (len(word) >= 2 or word.isdigit()) and word not in _STOP_WORDS and word not in words:
-            words.append(word)
-    words = words[:40]
+    words = list(dict.fromkeys(word for word in _WORD_RE.findall(query.casefold())
+                              if (len(word) >= 2 or word.isdigit()) and word not in _STOP_WORDS))[:40]
     if not words:
         return ()
     match_query = " OR ".join(f'"{word}"' for word in words)
-    index_path = _cache_path(root)
-
     with _INDEX_LOCK:
-        connection = _connect(index_path)
+        connection = _connect(_cache_path(root))
         try:
             with connection:
-                connection.execute("BEGIN IMMEDIATE")
                 _refresh_index(root, connection)
-                return tuple(
-                    connection.execute(
-                        "SELECT path, title, content FROM chunks "
-                        "WHERE chunks MATCH ? ORDER BY bm25(chunks, 0.0, 4.0, 1.0) LIMIT ?",
-                        (match_query, _RESULT_COUNT),
-                    ).fetchall()
-                )
+            lexical = connection.execute(
+                "SELECT rowid, path, title, content FROM chunks WHERE chunks MATCH ? "
+                "ORDER BY bm25(chunks, 0.0, 4.0, 1.0) LIMIT 20", (match_query,)
+            ).fetchall()
+            semantic = []
+            if settings.rag_vector_enabled:
+                try:
+                    semantic = vector_search(connection, query, settings)
+                except (VectorSearchError, httpx.HTTPError, ValueError, KeyError) as error:
+                    note = f"Векторный поиск недоступен; использован только BM25: {error}"
+                    status.append(note)
+                    logging.getLogger(__name__).warning(note)
+            return fuse_results(lexical, semantic, _RESULT_COUNT)
         finally:
             connection.close()
 
 
-def build_documentation_tool(docs_root: str | Path):
-    """Create an agent tool that searches the configured RX documentation."""
-
+def build_documentation_tool(docs_root: str | Path, settings: Settings | None = None, *, on_results=None, on_status=None):
+    """Create a hybrid documentation retrieval tool."""
     root = Path(docs_root).expanduser().resolve()
 
     @tool
     def search_directum_documentation(query: str) -> str:
-        """Search Directum RX 26.2 documentation when a log concerns product behavior, configuration, integration, or operations. Use a short query with exact error names, service names, or relevant concepts; do not use for unrelated generic code errors."""
-
+        """Search Directum RX 26.2 documentation for product behavior, configuration, integrations or operations. Use a short query with relevant concepts and exact error names."""
         if not query.strip():
             raise ValueError("Поисковый запрос по документации не может быть пустым")
-        results = search_documentation(root, query)
-        if not results:
-            return "В документации Directum RX совпадений по этому запросу не найдено."
-        return format_documentation_results(results)
+        status: list[str] = []
+        results = search_documentation(root, query, settings=settings, status=status)
+        if on_results is not None:
+            on_results(results)
+        if on_status is not None:
+            on_status(status)
+        text = format_documentation_results(results) if results else "В документации Directum RX совпадений по этому запросу не найдено."
+        return text + ("\n\n" + "\n".join(status) if status else "")
 
     return search_directum_documentation
 
 
-def search_documentation(
-    docs_root: str | Path,
-    query: str,
-) -> tuple[tuple[str, str, str], ...]:
-    """Search the local documentation index and return source path, title, and excerpt."""
-
+def search_documentation(docs_root: str | Path, query: str, *,
+                         settings: Settings | None = None, status: list[str] | None = None):
+    """Return source path, title and excerpt; optionally report degraded retrieval."""
     root = Path(docs_root).expanduser().resolve()
     try:
-        return _search_index(str(root), query[:2000])
+        return _search_index(str(root), query[:2000], settings or get_settings(),
+                             status if status is not None else [])
     except (OSError, sqlite3.Error) as error:
         raise DocumentationSearchError(
             f"Не удалось выполнить поиск по документации Directum RX: {error}"
