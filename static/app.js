@@ -117,28 +117,23 @@ async function getRepositoryPath() {
   return repo;
 }
 
-// ==========================================================================
-// 3. ОТОБРАЖЕНИЕ ПРЕДЛОЖЕННОГО ИСПРАВЛЕНИЯ (Diff)
-// ==========================================================================
+
+function renderMarkdown(text) {
+    if (!text) return "";
+    // Парсинг markdown в HTML
+    const rawHtml = marked.parse(text);
+    // Очистка от XSS-скриптов
+    return DOMPurify.sanitize(rawHtml);
+    
+}
+
 function showProposal(payload) {
   currentProposal = payload;
-  
-  if (!resultContent.innerHTML.trim() || resultContent.innerHTML.includes("Ожидание")) {
-      resultContent.innerHTML = renderMarkdown(payload.analysis || "Анализ доступен в логах workflow.");
-      hljs.highlightAll();
-  }
-
   proposalExplanation.innerHTML = renderMarkdown(payload.explanation);
   proposalPath.textContent = `Файл: ${payload.path}`;
   oldText.textContent = payload.old_text;
-  
-  if (!payload.new_text || payload.new_text.trim() === "") {
-    newText.innerHTML = '<span style="color: var(--gh-fg-muted); font-style: italic;">Агент не смог предложить безопасное изменение для этого фрагмента.</span>';
-  } else {
-    newText.textContent = payload.new_text;
-    hljs.highlightAll();
-  }
-  
+  newText.innerHTML = renderMarkdown(payload.new_text);
+  hljs.highlightAll();
   prDescription.value = payload.description || "Описание будет сформировано при создании Pull Request.";
   document.querySelector("#pr-title").value = `fix: ${payload.path}`;
   
@@ -407,7 +402,6 @@ form.addEventListener("submit", async (event) => {
       const detail = typeof payload.detail === "string" ? payload.detail : "Проверьте файл и настройки сервера.";
       throw new Error(detail);
     }
-    
     resultContent.innerHTML = renderMarkdown(payload.result);
     hljs.highlightAll();
     resultTime.textContent = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -672,28 +666,14 @@ ciScanButton.addEventListener("click", async () => {
 
     payload.results.forEach((item) => {
       const article = document.createElement("article");
-      article.className = "gh-box mt-3"; 
-      
-      article.innerHTML = `
-        <div class="gh-box-header flex-between" style="padding: 12px 16px;">
-            <div>
-                <strong>${item.workflow || "CI"} · run ${item.run_id}</strong>
-                <a href="${item.url || "#"}" target="_blank" rel="noreferrer" class="gh-text-muted" style="margin-left: 8px; font-size: 12px; text-decoration: none;">Открыть workflow</a>
-            </div>
-            <button class="gh-btn ci-fix-button" type="button">Предложить фикс</button>
-        </div>
-        <div class="gh-box-body">
-            <div class="gh-markdown-body" style="font-size: 13px; padding: 0; border: none;"></div>
-        </div>
-      `;
-      
-      article.querySelector(".gh-markdown-body").innerHTML = renderMarkdown(item.analysis);
+      article.className = "ci-result";
+      article.innerHTML = `<strong>${item.workflow || "CI"} · run ${item.run_id}</strong><a href="${item.url || "#"}" target="_blank" rel="noreferrer">Открыть workflow</a><p></p><button class="secondary-button ci-fix-button" type="button">Предложить исправление</button>`;
+      article.querySelector("p").innerHTML = renderMarkdown(item.analysis);
+      // Обновляем подсветку синтаксиса
       hljs.highlightAll();
-
-      const fixBtn = article.querySelector(".ci-fix-button");
-      fixBtn.addEventListener("click", async () => {
-        fixBtn.disabled = true;
-        fixBtn.textContent = "Готовим...";
+      article.querySelector(".ci-fix-button").addEventListener("click", async () => {
+        const button = article.querySelector(".ci-fix-button");
+        button.disabled = true;
         ciMessage.textContent = "Готовим предложение по логам workflow...";
         ciMessage.style.color = "var(--gh-fg-default)";
         ciMessage.hidden = false;
@@ -888,6 +868,12 @@ function initViewSwitcher() {
   } catch (error) {
     console.warn("Не удалось инициализировать переключение экранов.", error);
   }
-}
 
-initViewSwitcher();
+  // ВРЕМЕННЫЙ ТЕСТ (удалить после проверки)
+setTimeout(() => {
+    const testMarkdown = "## Тестовый заголовок\n\nЭто **жирный текст** и *курсив*.\n\n```python\nprint('Hello, World!')\n```\n\n- Пункт 1\n- Пункт 2";
+    document.querySelector("#result-panel").hidden = false; 
+    document.querySelector("#result-content").innerHTML = renderMarkdown(testMarkdown);
+    hljs.highlightAll();
+}, 500);
+});
