@@ -118,15 +118,6 @@ async function getRepositoryPath() {
 }
 
 
-function renderMarkdown(text) {
-    if (!text) return "";
-    // Парсинг markdown в HTML
-    const rawHtml = marked.parse(text);
-    // Очистка от XSS-скриптов
-    return DOMPurify.sanitize(rawHtml);
-    
-}
-
 function showProposal(payload) {
   currentProposal = payload;
   proposalExplanation.innerHTML = renderMarkdown(payload.explanation);
@@ -868,12 +859,6 @@ function initViewSwitcher() {
   } catch (error) {
     console.warn("Не удалось инициализировать переключение экранов.", error);
   }
+}
 
-  // ВРЕМЕННЫЙ ТЕСТ (удалить после проверки)
-setTimeout(() => {
-    const testMarkdown = "## Тестовый заголовок\n\nЭто **жирный текст** и *курсив*.\n\n```python\nprint('Hello, World!')\n```\n\n- Пункт 1\n- Пункт 2";
-    document.querySelector("#result-panel").hidden = false; 
-    document.querySelector("#result-content").innerHTML = renderMarkdown(testMarkdown);
-    hljs.highlightAll();
-}, 500);
-});
+initViewSwitcher();
