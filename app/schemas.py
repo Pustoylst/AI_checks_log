@@ -30,6 +30,55 @@ class AnalyzeResponse(BaseModel):
     result: str
 
 
+class ShareLogFile(BaseModel):
+    """One log file discovered in the configured network share."""
+
+    name: str
+    path: str
+    size: int
+    modified: str | None = None
+
+
+class ShareLogsResponse(BaseModel):
+    """Bounded listing of the network log share."""
+
+    root: str
+    count: int
+    files: list[ShareLogFile]
+
+
+class ShareLogAnalyzeResponse(AnalyzeResponse):
+    """Analysis result for a log read directly from the network share."""
+
+    source: str
+    preprocessed: bool = False
+    stats: dict[str, Any] | None = None
+
+
+class ShareLogPreprocessResponse(BaseModel):
+    """Compact report produced from a large log without calling the model."""
+
+    source: str
+    report: str
+    stats: dict[str, Any]
+
+
+class ShareOverviewResponse(BaseModel):
+    """Aggregated report for many logs without calling the model."""
+
+    root: str
+    report: str
+    stats: dict[str, Any]
+
+
+class ShareOverviewAnalyzeRequest(BaseModel):
+    """A previously built overview that should be analysed by the model."""
+
+    report: str = Field(min_length=1, max_length=60000)
+    stats: dict[str, Any] | None = None
+    question: str | None = Field(default=None, max_length=2000)
+
+
 class FixProposal(BaseModel):
     """A precise, reviewable replacement proposed by the agent."""
 
@@ -52,7 +101,6 @@ class ApplyFixResponse(BaseModel):
     """Result of applying an approved fix."""
 
     path: str
-    backup_path: str
     message: str
 
 

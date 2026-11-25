@@ -1,17 +1,56 @@
+/* --- ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ (Directum RX Light Theme) --- */
 :root {
-  --ink: #17231f;
-  --muted: #6e7c75;
-  --paper: #f5f4ee;
-  --panel: #fffefa;
-  --line: #d7ddd4;
-  --accent: #d8f36b;
-  --accent-dark: #4b6418;
-  --error: #a63e38;
-  --serif: Georgia, "Times New Roman", serif;
-  --sans: "Avenir Next", "Helvetica Neue", sans-serif;
+  color-scheme: light;
+
+  /* Фоны */
+  --gh-bg-canvas: #F4F5F7;
+  --gh-bg-default: #FFFFFF;
+  --gh-bg-subtle: #F9FAFB;
+  --gh-bg-inset: #F9FAFB;
+
+  /* Границы и разделители */
+  --gh-border-default: #DCE1E7;
+  --gh-border-muted: #E8ECEF;
+
+  /* Текст */
+  --gh-fg-default: #263238;
+  --gh-fg-muted: #607D8B;
+
+  /* Фирменный акцент Directum RX */
+  --gh-accent-fg: #F37021;
+  --gh-accent-emphasis: #D95B11;
+  --gh-accent-subtle: #FFF3EB;
+
+  /* Статусы */
+  --gh-success-fg: #1E8E3E;
+  --gh-danger-fg: #D93025;
+  --gh-attention-fg: #E37400;
+
+  /* Кнопки */
+  --gh-btn-bg: #FFFFFF;
+  --gh-btn-hover-bg: #FFF3EB;
+  --gh-btn-border: #DCE1E7;
+
+  /* Шрифты */
+  --gh-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --gh-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gh-border-default) var(--gh-bg-subtle);
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: var(--gh-bg-subtle); }
+*::-webkit-scrollbar-thumb {
+  background-color: var(--gh-border-default);
+  border: 2px solid var(--gh-bg-subtle);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover { background-color: var(--gh-fg-muted); }
+::selection { background: var(--gh-accent-subtle); }
+
 body {
   margin: 0;
   color: var(--ink);

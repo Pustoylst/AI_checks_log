@@ -1,14 +1,29 @@
 """HTTP API for Directum log analysis."""
 
-import json
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import ValidationError
+from app.log_input import MAX_UPLOAD_BYTES, parse_log, read_log_upload
+from app.log_overview import (
+    DEFAULT_OVERVIEW_BUDGET_CHARS,
+    DEFAULT_OVERVIEW_MAX_BYTES,
+    DEFAULT_OVERVIEW_MAX_FILES,
+    LogOverviewError,
+    build_overview,
+)
+from app.log_preprocess import DEFAULT_BUDGET_CHARS, DEFAULT_MAX_BYTES, LogPreprocessError, preprocess_file
+from app.log_share import (
+    LogShareError,
+    LogSharePathError,
+    LogShareUnavailableError,
+    list_share_logs,
+    resolve_share_log,
+)
 
-from app.agent import analyze_log, propose_fix
+from app.agent import FixProposalError, analyze_log, propose_fix
+from app.tools import validate_repository_root
 from app.ci_watcher import _run_logs, mark_fix_proposed, scan_failed_runs
 from app.fixes import apply_approved_fix
 from app.git_service import (
@@ -18,10 +33,28 @@ from app.git_service import (
     github_checks,
     repository_status,
 )
-from app.schemas import ApplyFixRequest, ApplyFixResponse, AnalyzeResponse, FixProposal, LogPayload, PullRequestRequest
+from app.schemas import (
+    ApplyFixRequest,
+    ApplyFixResponse,
+    AnalyzeResponse,
+    FixProposal,
+    PullRequestRequest,
+    ShareLogAnalyzeResponse,
+    ShareLogPreprocessResponse,
+    ShareLogsResponse,
+    ShareOverviewAnalyzeRequest,
+    ShareOverviewResponse,
+)
 
 app = FastAPI(title="Directum Log Analyzer", version="0.1.0")
 app.mount("/static", StaticFiles(directory=Path(__file__).parent.parent / "static"), name="static")
+
+
+def _repository_root(repo: str) -> Path:
+    try:
+        return validate_repository_root(repo)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from None
 
 
 @app.get("/", include_in_schema=False)
@@ -66,6 +99,7 @@ def ci_checks_endpoint(ref: str | None = Query(default=None)) -> dict[str, objec
 def ci_scan_endpoint(repo: str = Query(...)) -> dict[str, object]:
     """Scan new failed GitHub Actions runs once without changing Git files."""
 
+    repo = str(_repository_root(repo))
     try:
         from app.config import get_settings
 
@@ -88,14 +122,15 @@ def ci_scan_endpoint(repo: str = Query(...)) -> dict[str, object]:
 def ci_propose_fix_endpoint(run_id: int = Query(...), repo: str = Query(...)) -> FixProposal:
     """Build a code-fix proposal directly from a failed GitHub Actions run."""
 
+    root = _repository_root(repo)
     try:
         from app.config import get_settings
 
         settings = get_settings()
         logs = _run_logs(settings, run_id)
         log_data = {"run_id": run_id, "ci_logs": logs}
-        analysis = analyze_log(log_data, repo_root=Path(repo), settings=settings)
-        proposal = propose_fix(log_data, Path(repo), settings=settings)
+        analysis = analyze_log(log_data, repo_root=root, settings=settings)
+        proposal = propose_fix(log_data, root, settings=settings)
         proposal.analysis = analysis
         proposal.run_id = run_id
         proposal.description = build_pull_request_body(
@@ -109,6 +144,8 @@ def ci_propose_fix_endpoint(run_id: int = Query(...), repo: str = Query(...)) ->
         state_dir = Path(settings.ci_state_dir).expanduser().resolve()
         mark_fix_proposed(repo, run_id, state_dir / f"{Path(repo).resolve().name}-proposed.json")
         return proposal
+    except FixProposalError as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)) from None
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
     except GitOperationError as error:
@@ -153,30 +190,264 @@ async def analyze_endpoint(
 ) -> AnalyzeResponse:
     """Validate an uploaded JSON log and send it to the analysis agent."""
 
-    raw_data = await file.read()
-    if not raw_data.strip():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Файл лога пуст")
+    payload = await read_log_upload(file)
 
+    root = _repository_root(repo) if repo else None
     try:
-        parsed_data = json.loads(raw_data)
-        if parsed_data == {}:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Лог должен быть непустым JSON-объектом")
-        payload = LogPayload.model_validate(parsed_data)
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Файл содержит невалидный JSON") from None
-    except ValidationError as error:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=json.loads(error.json())) from None
-
-    try:
-        result = analyze_log(payload.model_dump(exclude_none=True), repo_root=Path(repo) if repo else None)
+        result = analyze_log(payload, repo_root=root)
     except TimeoutError:
-        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="GigaChat не ответил вовремя") from None
+        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Ollama не ответил вовремя") from None
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
     except Exception as error:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Ошибка GigaChat: {error}") from None
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Ошибка локальной Ollama: {error}. Проверьте запуск Ollama и наличие модели: ollama pull qwen3:8b") from None
 
     return AnalyzeResponse(result=result)
+
+
+@app.get("/logs/share/files", response_model=ShareLogsResponse)
+def share_files_endpoint(limit: int | None = Query(default=None, ge=1, le=1000)) -> ShareLogsResponse:
+    """List supported logs in the configured network share without copying them."""
+
+    from app.config import get_settings
+
+    settings = get_settings()
+    effective_limit = min(limit or settings.log_share_max_files, settings.log_share_max_files)
+    try:
+        files = list_share_logs(
+            settings.log_share_path,
+            limit=effective_limit,
+            scan_limit=settings.log_share_scan_limit,
+        )
+    except LogShareUnavailableError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
+    except LogShareError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from None
+    return ShareLogsResponse(root=settings.log_share_path, count=len(files), files=files)
+
+
+def _preprocess_share_log(settings, name: str, focus: str):
+    """Resolve and compact one share log without loading it into memory."""
+
+    path, size = resolve_share_log(settings.log_share_path, name)
+    return preprocess_file(
+        path,
+        source_name=name,
+        size=size,
+        focus=focus,
+        budget_chars=getattr(settings, "log_preprocess_budget_chars", DEFAULT_BUDGET_CHARS),
+        max_bytes=getattr(settings, "log_preprocess_max_bytes", DEFAULT_MAX_BYTES),
+    )
+
+
+def _preprocess_http_error(error: LogPreprocessError) -> HTTPException:
+    message = str(error)
+    status_code = (
+        status.HTTP_503_SERVICE_UNAVAILABLE
+        if "Не удалось прочитать" in message or "Не удалось получить" in message
+        else status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+    )
+    return HTTPException(status_code=status_code, detail=message)
+
+
+@app.get("/logs/share/preprocess", response_model=ShareLogPreprocessResponse)
+def share_preprocess_endpoint(
+    name: str = Query(..., description="Relative path inside the log share"),
+    focus: str = Query(default="errors", pattern="^(errors|all)$"),
+) -> ShareLogPreprocessResponse:
+    """Return the compact report for a large log without calling the model."""
+
+    from app.config import get_settings
+
+    settings = get_settings()
+    try:
+        result = _preprocess_share_log(settings, name, focus)
+    except LogShareUnavailableError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
+    except LogSharePathError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from None
+    except LogPreprocessError as error:
+        raise _preprocess_http_error(error) from None
+    return ShareLogPreprocessResponse(source=name, report=result.report, stats=result.stats)
+
+
+@app.post("/logs/share/overview", response_model=ShareOverviewResponse)
+def share_overview_endpoint(
+    focus: str = Query(default="errors", pattern="^(errors|all)$"),
+    limit: int | None = Query(
+        default=None,
+        ge=0,
+        le=5000,
+        description="0 or omitted means all files up to LOG_OVERVIEW_MAX_FILES",
+    ),
+) -> ShareOverviewResponse:
+    """Scan many share logs and return one aggregate report without the model.
+
+    The scan is deliberately separate from model analysis: a multi-gigabyte
+    share can take a while, and the user may want to inspect the aggregate
+    before spending time on inference.
+    """
+
+    from app.config import get_settings
+
+    settings = get_settings()
+    try:
+        result = build_overview(
+            settings.log_share_path,
+            focus=focus,
+            limit=limit,
+            max_files=getattr(settings, "log_overview_max_files", DEFAULT_OVERVIEW_MAX_FILES),
+            max_bytes=getattr(settings, "log_overview_max_bytes", DEFAULT_OVERVIEW_MAX_BYTES),
+            per_file_max_bytes=getattr(settings, "log_preprocess_max_bytes", DEFAULT_MAX_BYTES),
+            budget_chars=getattr(settings, "log_overview_budget_chars", DEFAULT_OVERVIEW_BUDGET_CHARS),
+            scan_limit=getattr(settings, "log_share_scan_limit", 5000),
+        )
+    except LogShareUnavailableError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
+    except LogOverviewError as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)) from None
+    except LogShareError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from None
+    return ShareOverviewResponse(
+        root=settings.log_share_path,
+        report=result.report,
+        stats=result.stats,
+    )
+
+
+@app.post("/logs/share/overview/analyze", response_model=AnalyzeResponse)
+def share_overview_analyze_endpoint(
+    request: ShareOverviewAnalyzeRequest,
+    repo: str | None = Query(default=None, description="Optional repository root for code inspection"),
+) -> AnalyzeResponse:
+    """Send a previously built overview report to the local analysis agent."""
+
+    from app.config import get_settings
+
+    settings = get_settings()
+    root = _repository_root(repo) if repo else None
+    payload = {
+        "log_format": "overview",
+        "source": "all selected logs",
+        "report": request.report,
+    }
+    if request.question:
+        payload["question"] = request.question
+    try:
+        result = analyze_log(payload, repo_root=root, settings=settings)
+    except TimeoutError:
+        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Ollama не ответил вовремя") from None
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
+    except Exception as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Ошибка локальной Ollama: {error}. Проверьте запуск Ollama и наличие модели: ollama pull qwen3:8b",
+        ) from None
+    return AnalyzeResponse(result=result)
+
+
+@app.get("/logs/share/file")
+def share_file_endpoint(name: str = Query(..., description="Relative path inside the log share")) -> FileResponse:
+    """Stream one log from the network share without a 1 MiB download limit."""
+
+    from app.config import get_settings
+
+    try:
+        path, _ = resolve_share_log(get_settings().log_share_path, name)
+    except LogShareUnavailableError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
+    except LogSharePathError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from None
+    return FileResponse(path, media_type="application/octet-stream", filename=path.name)
+
+
+@app.post("/logs/share/analyze", response_model=ShareLogAnalyzeResponse)
+def share_analyze_endpoint(
+    name: str = Query(..., description="Relative path inside the log share"),
+    repo: str | None = Query(default=None, description="Optional repository root for code inspection"),
+    focus: str = Query(default="errors", pattern="^(errors|all)$"),
+    question: str | None = Query(default=None, max_length=2000, description="Optional follow-up question"),
+) -> ShareLogAnalyzeResponse:
+    """Analyze one log read directly from the network share.
+
+    Small single-object ``.json`` files keep the old direct parsing. Everything
+    else is streamed through the preprocessor so a 200 MB daily log becomes a
+    bounded report instead of a request to load the whole file into memory.
+    """
+
+    from app.config import get_settings
+
+    settings = get_settings()
+    try:
+        path, size = resolve_share_log(settings.log_share_path, name)
+    except LogShareUnavailableError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
+    except LogSharePathError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from None
+
+    preprocessed = False
+    stats = None
+    if path.suffix.lower() == ".json" and size <= MAX_UPLOAD_BYTES:
+        try:
+            raw = path.read_bytes()
+        except OSError as error:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Не удалось прочитать лог {name}: {error}",
+            ) from None
+        try:
+            payload = parse_log(raw, path.name)
+        except HTTPException as error:
+            # Only valid multi-record JSONL may fall back to preprocessing.
+            # Malformed JSON and invalid single-object payloads keep their errors.
+            import json
+
+            try:
+                lines = [line for line in raw.decode("utf-8-sig").splitlines() if line.strip()]
+                is_jsonl = len(lines) > 1 and all(isinstance(json.loads(line), dict) for line in lines)
+            except (UnicodeDecodeError, ValueError):
+                is_jsonl = False
+            if error.status_code != 400 or not is_jsonl:
+                raise
+            preprocessed = True
+    if preprocessed or path.suffix.lower() != ".json" or size > MAX_UPLOAD_BYTES:
+        try:
+            preprocessed_result = _preprocess_share_log(settings, name, focus)
+        except LogShareUnavailableError as error:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
+        except LogSharePathError as error:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from None
+        except LogPreprocessError as error:
+            raise _preprocess_http_error(error) from None
+        preprocessed = True
+        stats = preprocessed_result.stats
+        payload = {
+            "log_format": "preprocessed",
+            "source": name,
+            "report": preprocessed_result.report,
+        }
+    if question:
+        payload["question"] = question
+
+    root = _repository_root(repo) if repo else None
+    try:
+        result = analyze_log(payload, repo_root=root, settings=settings)
+    except TimeoutError:
+        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Ollama не ответил вовремя") from None
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
+    except Exception as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Ошибка локальной Ollama: {error}. Проверьте запуск Ollama и наличие модели: ollama pull qwen3:8b",
+        ) from None
+    return ShareLogAnalyzeResponse(
+        result=result,
+        source=name,
+        preprocessed=preprocessed,
+        stats=stats,
+    )
 
 
 @app.post("/propose-fix", response_model=FixProposal)
@@ -188,23 +459,22 @@ async def propose_fix_endpoint(
 
     if not repo:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Для предложения исправления нужен repo")
-    raw_data = await file.read()
-    try:
-        payload = LogPayload.model_validate(json.loads(raw_data))
-    except (json.JSONDecodeError, UnicodeDecodeError, ValidationError):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Нужен корректный JSON-лог") from None
+    payload = await read_log_upload(file)
+    root = _repository_root(repo)
     try:
         from app.config import get_settings
 
         settings = get_settings()
-        log_data = payload.model_dump(exclude_none=True)
-        analysis = analyze_log(log_data, repo_root=Path(repo), settings=settings)
-        proposal = propose_fix(log_data, Path(repo), settings=settings)
+        log_data = payload
+        analysis = analyze_log(log_data, repo_root=root, settings=settings)
+        proposal = propose_fix(log_data, root, settings=settings)
         proposal.analysis = analysis
         proposal.description = build_pull_request_body(
             proposal.path, proposal.explanation, proposal.old_text, proposal.new_text, analysis=proposal.analysis
         )
         return proposal
+    except FixProposalError as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)) from None
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Не удалось подготовить исправление: {error}") from None
 
@@ -214,11 +484,11 @@ def apply_fix_endpoint(request: ApplyFixRequest, repo: str = Query(...)) -> Appl
     """Apply only the exact change explicitly approved by the user."""
 
     try:
-        path, backup_path = apply_approved_fix(
+        path = apply_approved_fix(
             repo, request.path, request.old_text, request.new_text, request.approved
         )
     except PermissionError as error:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from None
     except (FileNotFoundError, ValueError) as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from None
-    return ApplyFixResponse(path=path, backup_path=backup_path, message="Изменение применено; резервная копия создана")
+    return ApplyFixResponse(path=path, message="Изменение применено")

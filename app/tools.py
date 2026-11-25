@@ -1,6 +1,7 @@
 """Repository inspection tools exposed to the analysis agent."""
 
 from pathlib import Path
+import re
 
 from langchain_core.tools import tool
 
@@ -15,10 +16,28 @@ def _safe_path(repo_root: Path, requested_path: str) -> Path:
     return candidate
 
 
-def build_repository_tools(repo_root: str | Path) -> list:
-    """Build tools bound to one repository root."""
+def validate_repository_root(repo_root: str | Path) -> Path:
+    """Reject malformed or missing roots before invoking the model."""
 
-    root = Path(repo_root).resolve()
+    value = str(repo_root)
+    if len(re.findall(r"[A-Za-z]:", value)) > 1:
+        raise ValueError(
+            "Некорректный путь репозитория: буква диска указана несколько раз. "
+            "Укажите один полный путь без повторения префикса."
+        )
+    try:
+        root = Path(value).expanduser().resolve()
+        if root.is_dir():
+            return root
+    except (OSError, ValueError):
+        pass
+    raise ValueError(f"Папка репозитория не найдена: {value}. Проверьте поле пути к репозиторию.")
+
+
+def build_repository_tools(repo_root: str | Path) -> list:
+    """Build tools bound to one existing repository root."""
+
+    root = validate_repository_root(repo_root)
 
     @tool
     def read_git_file(path: str) -> str:
@@ -54,4 +73,24 @@ def build_repository_tools(repo_root: str | Path) -> list:
 
         return "\n".join(matches) or "No matches found."
 
-    return [read_git_file, search_code_in_repo]
+    @tool
+    def list_repository_files() -> str:
+        """List up to 200 real repository files to discover existing source paths."""
+        ignored = {".git", ".venv", "venv", "__pycache__", ".pytest_cache", "node_modules"}
+        paths: list[str] = []
+        for file_path in root.rglob("*"):
+            relative = file_path.relative_to(root)
+            if ignored.intersection(relative.parts) or ".backup-" in file_path.name:
+                continue
+            if not file_path.is_file():
+                continue
+            try:
+                _safe_path(root, str(relative))
+            except ValueError:
+                continue
+            paths.append(relative.as_posix())
+            if len(paths) == 200:
+                return "\n".join(paths) + "\n[Список ограничен; уточните поиск через search_code_in_repo.]"
+        return "\n".join(paths) or "[Нет доступных файлов.]"
+
+    return [read_git_file, search_code_in_repo, list_repository_files]

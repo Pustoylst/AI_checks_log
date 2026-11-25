@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-color-mode="dark" data-dark-theme="dark">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,96 +12,382 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   </head>
   <body>
-    <main class="workspace">
-      <header class="topbar">
-        <div class="brand-mark" aria-hidden="true">DL</div>
-        <div>
-          <p class="eyebrow">DIRECTUM / DIAGNOSTICS</p>
-          <h1>Разбор инцидента</h1>
+    <!-- ВЕРХНЯЯ ШАПКА -->
+    <header class="gh-header">
+      <div class="gh-header-container">
+        <svg class="gh-logo" width="32" height="32" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+          <rect width="36" height="36" rx="7" fill="#F37021"/>
+          <path d="M8.5 14.5C12.5 11.2 18.2 9.2 24.5 8.8C25.3 8.7 25.8 9.6 25.3 10.3C22.2 14.2 18.5 16.5 15.2 17.8C15.5 21.4 16.6 25.1 18.4 28.4C18.8 29.1 18.1 29.9 17.3 29.6C12.8 27.6 9.3 23.1 8.2 16.2C8.1 15.5 8.1 14.9 8.5 14.5Z" fill="#FFFFFF"/>
+          <path d="M18.2 19.2C21.1 17.1 24.8 15.8 28.6 15.6C29.2 15.5 29.6 16.2 29.2 16.7C27.1 19.4 24.7 21.1 22.5 22.1C22.7 24.6 23.4 27.1 24.6 29.3C24.9 29.8 24.4 30.4 23.8 30.2C20.8 28.8 18.6 25.8 17.9 20.6C17.8 20.1 17.9 19.5 18.2 19.2Z" fill="#FFFFFF"/>
+        </svg>
+        <div class="gh-header-title">
+          <span class="gh-repo-name">Directum Log Analyzer</span>
+          <span class="gh-badge-public">v0.1.0</span>
         </div>
-        <div class="status-pill"><span class="status-dot"></span>Локальный режим</div>
-      </header>
+        <div class="gh-status-pill"><span class="status-dot"></span>Локальный режим</div>
+      </div>
+    </header>
 
-      <section class="intro">
-        <p class="section-kicker">01 / Входные данные</p>
-        <h2>Загрузите лог,<br><em>найдите причину.</em></h2>
-        <p class="intro-copy">Агент сопоставит ошибку с исходным кодом и соберёт техническое заключение на русском языке.</p>
-      </section>
-
-      <form id="analyze-form" class="analysis-form">
-        <label class="upload-zone" for="log-file">
-          <input id="log-file" name="file" type="file" accept="application/json,.json" required>
-          <span class="upload-icon" aria-hidden="true">↑</span>
-          <span class="upload-title" id="file-name">Выберите JSON-файл</span>
-          <span class="upload-meta">или перетащите его сюда</span>
-        </label>
-
-        <label class="field-label" for="repo-path">Корень репозитория <span>необязательно</span></label>
-        <div class="repo-field">
-          <span class="repo-prefix">⌂</span>
-          <input id="repo-path" name="repo" type="text" placeholder="/Users/.../project" autocomplete="off">
+    <!-- КОРПОРАТИВНЫЙ КАРКАС -->
+    <div class="rx-shell">
+      <!-- ЛЕВОЕ МЕНЮ -->
+      <aside class="rx-sidebar">
+        <div class="rx-sidebar-heading">РАЗДЕЛЫ СИСТЕМЫ</div>
+        <nav class="gh-tabs">
+          <a href="#home-section" class="gh-tab active" data-rx-view-target="home">
+            <span class="rx-nav-icon" aria-hidden="true">
+              <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M8 1.25 1.5 6.9v7.35c0 .41.34.75.75.75h4V10.5h3.5V15H13a.75.75 0 00.75-.75V6.9L8 1.25Zm0 1.94 5 4.35v6.71h-2V9h-5v5.25H3V7.54l5-4.35Z"></path></svg>
+            </span>
+            <span class="rx-nav-text">
+              <span class="rx-nav-title">Рабочий стол</span>
+              <span class="rx-nav-subtitle">Обзор и быстрый запуск</span>
+            </span>
+          </a>
+          <a href="#analyze-section" class="gh-tab" data-rx-view-target="analyze">
+            <span class="rx-nav-icon" aria-hidden="true">
+              <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"></path></svg>
+            </span>
+            <span class="rx-nav-text">
+              <span class="rx-nav-title">Анализ лога</span>
+              <span class="rx-nav-subtitle">Разбор файла через Qwen3</span>
+            </span>
+          </a>
+          <a href="#ci-section" class="gh-tab" data-rx-view-target="ci">
+            <span class="rx-nav-icon" aria-hidden="true">
+              <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16zm.847-8.508a2.5 2.5 0 11-1.694-4.484 2.5 2.5 0 011.694 4.484zM8.5 14.5a6.5 6.5 0 100-13 6.5 6.5 0 000 13z"></path></svg>
+            </span>
+            <span class="rx-nav-text">
+              <span class="rx-nav-title">CI/CD и Git</span>
+              <span class="rx-nav-subtitle">Сборки Actions и ветки</span>
+            </span>
+          </a>
+          <a href="#share-section" class="gh-tab" data-rx-view-target="share">
+            <span class="rx-nav-icon" aria-hidden="true">
+              <svg class="octicon" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75zm-.25 1.75a.25.25 0 01.25-.25H5c.1 0 .2.05.25.1l.9 1.2c.33.44.85.7 1.4.7h5.7a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25H1.75a.25.25 0 01-.25-.25V2.75z"></path></svg>
+            </span>
+            <span class="rx-nav-text">
+              <span class="rx-nav-title">Логи Directum</span>
+              <span class="rx-nav-subtitle">Сетевая папка и сводка</span>
+            </span>
+          </a>
+        </nav>
+        <div class="rx-sidebar-info">
+          <span class="rx-sidebar-info-kicker">Локальная модель</span>
+          <strong class="rx-sidebar-info-title">Qwen3 8B · Ollama</strong>
+          <span class="rx-sidebar-info-note">Анализ выполняется на этом компьютере</span>
         </div>
+      </aside>
 
-        <button id="submit-button" class="submit-button" type="submit">
-          <span>Проверить лог</span>
-          <span class="button-arrow" aria-hidden="true">↗</span>
-        </button>
-      </form>
-
-      <section class="control-panel">
-        <div class="control-heading">
-          <div>
-            <p class="section-kicker">01 / Репозиторий</p>
-            <h2>Состояние проекта</h2>
+      <!-- ОСНОВНАЯ РАБОЧАЯ ОБЛАСТЬ -->
+      <main class="workspace">
+        <nav class="rx-breadcrumbs" aria-label="Навигация по разделу">
+          <div class="rx-breadcrumb-trail">
+            <a href="#analyze-section" class="rx-breadcrumb-link" data-rx-home>Рабочий стол</a>
+            <span class="rx-breadcrumb-separator" aria-hidden="true">/</span>
+            <span id="rx-breadcrumb-current" class="rx-breadcrumb-current">Обзор</span>
           </div>
-          <div class="control-buttons">
-            <button id="repo-status-button" class="secondary-button" type="button">Проверить Git</button>
-            <button id="ci-scan-button" class="secondary-button" type="button">Проверить CI</button>
-          </div>
-        </div>
-        <pre id="repo-status" class="status-output" hidden></pre>
-        <p id="ci-message" class="form-message" role="alert"></p>
-        <div id="ci-results" class="ci-results" hidden></div>
-      </section>
+          <a href="#analyze-section" id="rx-back-to-analyze" class="rx-breadcrumb-back" data-rx-home hidden>← На главный экран</a>
+        </nav>
 
-      <section id="result-panel" class="result-panel" aria-live="polite" hidden>
-        <div class="result-heading">
-          <div>
-            <p class="section-kicker">02 / Заключение</p>
-            <h2>Результат анализа</h2>
+      <p id="startup-message" class="gh-alert" role="alert">Интерфейс ещё не запущен. Если сообщение не исчезает, обновите страницу сочетанием Ctrl+F5. Проверьте, что JavaScript разрешён; если кнопки не реагируют, откройте F12 → Console и передайте текст первой ошибки.</p>
+      <div class="gh-content">
+        
+        <!-- ГЛАВНЫЙ ЭКРАН -->
+        <section id="home-section" data-rx-view="home">
+          <div class="rx-home-hero">
+            <span class="rx-home-eyebrow">Directum RX · Рабочий стол</span>
+            <h1>Разбор инцидентов</h1>
+            <p>Автоматический анализ логов и CI/CD инцидентов с помощью локальной Qwen3 8B</p>
+            <div class="rx-home-chips">
+              <span class="rx-chip">Локальная модель Qwen3 8B</span>
+              <span class="rx-chip">Данные не покидают компьютер</span>
+            </div>
           </div>
-          <span id="result-time" class="result-time"></span>
-        </div>
-        <div id="result-content" class="result-content"></div>
-        <div class="fix-actions">
-          <button id="propose-button" class="secondary-button" type="button">Предложить исправление</button>
-          <p id="fix-message" class="form-message" role="alert"></p>
-        </div>
-        <section id="proposal-panel" class="proposal-panel" hidden>
-          <p class="section-kicker">03 / Проверка изменения</p>
-          <h3 id="proposal-explanation"></h3>
-          <p class="proposal-path" id="proposal-path"></p>
-          <div class="diff-grid">
-            <div><span class="diff-label removed">Было</span><pre id="old-text"></pre></div>
-            <div><span class="diff-label added">Станет</span><pre id="new-text"></pre></div>
-          </div>
-          <label class="field-label" for="pr-description">Описание Pull Request</label>
-          <textarea id="pr-description" class="description-preview" readonly></textarea>
-          <button id="apply-button" class="submit-button" type="button">Применить изменение <span class="button-arrow">✓</span></button>
-          <p class="approval-note">Изменение не будет применено без вашего нажатия. Перед записью создаётся резервная копия.</p>
-          <div id="git-actions" class="git-actions" hidden>
-            <p class="section-kicker">04 / Git</p>
-            <label class="field-label" for="pr-title">Заголовок Pull Request</label>
-            <div class="repo-field"><input id="pr-title" type="text" value=""></div>
-            <button id="pr-button" class="submit-button" type="button">Создать Pull Request <span class="button-arrow">↗</span></button>
-            <p class="approval-note">Агент создаст отдельную ветку, commit, push и Pull Request. Merge выполняется после проверки PR на GitHub.</p>
+          <div class="rx-module-grid">
+            <a href="#analyze-section" class="rx-module-card" data-rx-target="analyze">
+              <span class="rx-module-icon" aria-hidden="true">
+                <svg class="octicon" viewBox="0 0 16 16" width="22" height="22"><path fill-rule="evenodd" d="M3.75 1.5A1.75 1.75 0 002 3.25v9.5c0 .97.78 1.75 1.75 1.75h8.5A1.75 1.75 0 0014 12.75v-9.5a1.75 1.75 0 00-1.75-1.75h-8.5ZM3.5 3.25a.25.25 0 01.25-.25h8.5a.25.25 0 01.25.25v9.5a.25.25 0 01-.25.25h-8.5a.25.25 0 01-.25-.25v-9.5ZM5 4.75h6v1.5H5v-1.5Zm0 3h6v1.5H5v-1.5Zm0 3h3.5v1.5H5v-1.5Z"></path></svg>
+              </span>
+              <span class="rx-module-title">Анализ файла лога</span>
+              <span class="rx-module-text">Загрузите JSON или текстовый лог, получите причины ошибок и безопасное предложение исправления.</span>
+              <span class="rx-module-action">Перейти к анализу →</span>
+            </a>
+            <a href="#ci-section" class="rx-module-card" data-rx-target="ci">
+              <span class="rx-module-icon" aria-hidden="true">
+                <svg class="octicon" viewBox="0 0 16 16" width="22" height="22"><path fill-rule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16Zm.847-8.508a2.5 2.5 0 11-1.694-4.484 2.5 2.5 0 011.694 4.484ZM8.5 14.5a6.5 6.5 0 100-13 6.5 6.5 0 000 13Z"></path></svg>
+              </span>
+              <span class="rx-module-title">Мониторинг CI/CD и Git</span>
+              <span class="rx-module-text">Проверьте состояние репозитория, упавшие GitHub Actions runs и подготовьте исправление.</span>
+              <span class="rx-module-action">Открыть мониторинг →</span>
+            </a>
+            <a href="#share-section" class="rx-module-card" data-rx-target="share">
+              <span class="rx-module-icon" aria-hidden="true">
+                <svg class="octicon" viewBox="0 0 16 16" width="22" height="22"><path fill-rule="evenodd" d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Zm-.25 1.75a.25.25 0 01.25-.25H5c.1 0 .2.05.25.1l.9 1.2c.33.44.85.7 1.4.7h5.7a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25H1.75a.25.25 0 01-.25-.25V2.75Z"></path></svg>
+              </span>
+              <span class="rx-module-title">Реестр логов Directum</span>
+              <span class="rx-module-text">Сводка по логам из сетевой папки, детальный анализ и скачивание выбранных файлов.</span>
+              <span class="rx-module-action">Открыть реестр →</span>
+            </a>
           </div>
         </section>
-      </section>
 
-      <p id="form-message" class="form-message" role="alert"></p>
-      <footer><span>GigaChat-2-Max</span><span>●</span><span>Без сохранения файлов</span></footer>
-    </main>
-    <script src="/static/app.js"></script>
+        <!-- БЛОК 1: Анализ лога -->
+        <section id="analyze-section" class="gh-box" data-rx-view="analyze" hidden>
+          <div class="gh-box-header">
+            <h2>Анализ лога</h2>
+          </div>
+          <div class="gh-box-body">
+            <form id="analyze-form" class="gh-form">
+              
+              <div class="gh-form-group">
+                <label class="gh-label" for="repo-path">Корень репозитория <span class="gh-optional">(необязательно для анализа)</span></label>
+                <input id="repo-path" name="repo" type="text" class="gh-input" placeholder="C:\путь\к\проекту" autocomplete="off">
+              </div>
+
+              <div class="gh-form-group">
+                <label class="gh-label" for="log-file">Файл лога (.json, .log, .txt)</label>
+                <label class="gh-upload-zone" for="log-file">
+                  <input id="log-file" name="file" type="file" accept=".json,.log,.txt,application/json,text/plain">
+                  <span class="gh-upload-icon">↑</span>
+                  <span class="gh-upload-text" id="file-name">Выберите файл или перетащите сюда</span>
+                </label>
+              </div>
+
+              <button id="submit-button" class="gh-btn gh-btn-primary" type="submit">
+                <span>Проверить лог</span>
+                <span class="spinner" hidden></span>
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- БЛОК 2: Состояние Git и CI -->
+        <section id="ci-section" class="gh-box mt-4" data-rx-view="ci" hidden>
+          <div class="gh-box-header flex-between">
+            <h2>Состояние репозитория и CI</h2>
+            <div class="gh-actions">
+              <button id="repo-status-button" class="gh-btn" type="button">Проверить Git</button>
+              <button id="ci-scan-button" class="gh-btn" type="button">
+                <span>Проверить CI</span>
+                <span class="spinner" hidden></span>
+              </button>
+            </div>
+          </div>
+          <div class="gh-box-body">
+            <p id="ci-message" class="gh-alert" role="alert" hidden></p>
+            <pre id="repo-status" class="gh-code-block" hidden></pre>
+            <div id="ci-results" class="ci-results" hidden></div>
+          </div>
+        </section>
+
+        <!-- БЛОК 3: Логи из сетевой папки Directum -->
+        <section id="share-section" class="gh-box mt-4" data-rx-view="share" hidden>
+          <div class="gh-box-header flex-between">
+            <div class="rx-section-title">
+              <h2>Логи Directum из сетевой папки</h2>
+              <p>Общая сводка, реестр файлов и детальный анализ одного лога</p>
+            </div>
+            <div class="gh-actions">
+              <button id="share-refresh-button" class="gh-btn" type="button">
+                <span>Обновить список</span>
+                <span class="spinner" hidden></span>
+              </button>
+            </div>
+          </div>
+          <div class="gh-box-body">
+            <p class="gh-text-muted text-sm">
+              Источник: <code id="share-root">\\192.168.240.2\Logs</code>
+            </p>
+            <p id="share-message" class="gh-alert" role="alert" hidden></p>
+
+            <div class="share-layout-grid">
+              <div class="share-control-column">
+                <div class="share-overview-box">
+                  <h3 class="text-lg font-semibold">Сначала — общая картина</h3>
+                  <p class="gh-text-muted text-sm">
+                    Сервис просканирует выбранные логи, объединит повторяющиеся ошибки и покажет,
+                    что происходит в целом. После этого можно открыть отдельный файл для детального разбора.
+                  </p>
+                  <div class="gh-form-group mt-2">
+                    <label class="gh-label" for="share-overview-limit">Охват</label>
+                    <select id="share-overview-limit" class="gh-input">
+                      <option value="100">Последние 100 файлов</option>
+                      <option value="300">Последние 300 файлов</option>
+                      <option value="0" selected>Все файлы (до лимита настройки)</option>
+                    </select>
+                  </div>
+                  <div class="gh-actions mt-3">
+                    <button id="share-overview-button" class="gh-btn gh-btn-primary" type="button">
+                      <span>Проанализировать все логи</span>
+                      <span class="spinner" hidden></span>
+                    </button>
+                    <button id="share-overview-preview-button" class="gh-btn" type="button">
+                      <span>Только сводка без модели</span>
+                      <span class="spinner" hidden></span>
+                    </button>
+                    <button id="share-overview-analyze-button" class="gh-btn" type="button" disabled>
+                      <span>Проанализировать сводку</span>
+                      <span class="spinner" hidden></span>
+                    </button>
+                  </div>
+                  <p id="share-overview-message" class="gh-alert" role="alert" hidden></p>
+                </div>
+              </div>
+
+              <div class="share-control-column">
+                <div class="share-detail-box">
+                  <h3 class="text-lg font-semibold">Детальный анализ одного лога</h3>
+                  <p class="gh-text-muted text-sm">
+                    Выберите файл в реестре ниже, настройте режим предобработки и запустите анализ.
+                  </p>
+                  <div class="gh-form-group mt-3">
+                    <label class="gh-label" for="share-focus">Режим предобработки</label>
+                    <select id="share-focus" class="gh-input">
+                      <option value="errors" selected>Ошибки и предупреждения (рекомендуется)</option>
+                      <option value="all">Все уровни и топ сообщений</option>
+                    </select>
+                  </div>
+                  <div class="gh-form-group mt-3">
+                    <label class="gh-label" for="share-question">Что именно проверить в выбранном логе? <span class="gh-optional">(необязательно)</span></label>
+                    <input id="share-question" class="gh-input" type="text" maxlength="2000" placeholder="Например: почему повторяется BrokerNotAvailableException?" autocomplete="off">
+                  </div>
+                  <div class="gh-actions mt-3">
+                    <button id="share-preprocess-button" class="gh-btn" type="button" disabled>
+                      <span>Показать выжимку</span>
+                      <span class="spinner" hidden></span>
+                    </button>
+                    <button id="share-analyze-button" class="gh-btn gh-btn-primary" type="button" disabled>
+                      <span>Анализировать выбранный лог</span>
+                      <span class="spinner" hidden></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="share-overview-panel" class="mt-4" hidden>
+              <h3 id="share-overview-title" class="text-lg font-semibold mb-3">Сводка по всем логам</h3>
+              <p id="share-overview-stats" class="gh-text-muted text-sm" hidden></p>
+              <div id="share-overview-report" class="gh-markdown-body"></div>
+              <div id="share-overview-analysis" class="gh-markdown-body mt-4" hidden></div>
+              <div id="share-overview-drilldown" class="mt-4" hidden></div>
+            </div>
+
+            <div id="share-files" class="share-file-list" hidden></div>
+
+            <div id="share-result-panel" class="mt-4" hidden>
+              <h3 id="share-result-title" class="text-lg font-semibold mb-3">Результат анализа</h3>
+              <p id="share-result-source" class="gh-text-muted text-sm" hidden></p>
+              <p id="share-stats" class="gh-text-muted text-sm" hidden></p>
+              <div id="share-result" class="gh-markdown-body"></div>
+            </div>
+
+            <div class="share-callout">
+              <span class="share-callout-icon" aria-hidden="true">
+                <svg class="octicon" viewBox="0 0 16 16" width="18" height="18">
+                  <circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+                  <path d="M8 7v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                  <circle cx="8" cy="4.75" r="0.9" fill="currentColor"></circle>
+                </svg>
+              </span>
+              <div class="share-callout-text">
+                <p class="gh-text-muted text-sm">Большие логи автоматически сворачиваются в выжимку: счётчики уровней, уникальные ошибки, стеки и контекст. В модель уходят килобайты вместо сотен мегабайт. Файлы читаются напрямую из сетевой папки и не копируются в репозиторий. Используются права учётной записи, под которой запущен сервис.</p>
+                <p class="gh-text-muted text-sm">Для этого источника доступны список, скачивание, выжимка и анализ; предложение исправления подключим следующим шагом.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- БЛОК 4: Результат анализа -->
+        <section id="result-panel" class="gh-box mt-4" hidden>
+          <div class="gh-box-header flex-between">
+            <h2>Результат анализа</h2>
+            <span id="result-time" class="gh-text-muted"></span>
+          </div>
+          <div class="gh-box-body">
+            <div id="result-content" class="gh-markdown-body"></div>
+            <div class="gh-actions mt-4">
+              <button id="propose-button" class="gh-btn" type="button">
+                <span>Предложить исправление</span>
+                <span class="spinner" hidden></span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- БЛОК 5: Проверка исправления (Diff) -->
+        <section id="proposal-panel" class="gh-box mt-4" hidden>
+          <div class="gh-box-header">
+            <h2>Проверка изменения</h2>
+          </div>
+          <div class="gh-box-body">
+            <h3 id="proposal-explanation" class="gh-markdown-body" style="font-size: 16px; border:none; padding:0; margin-bottom: 8px;"></h3>
+            <p class="gh-text-muted" id="proposal-path" style="margin-bottom: 16px;"></p>
+            
+            <div class="gh-diff-container">
+              <div class="gh-diff-header">
+                <div class="gh-diff-col">Было</div>
+                <div class="gh-diff-col">Станет</div>
+              </div>
+              <div class="gh-diff-body">
+                <div class="gh-diff-side gh-diff-removed">
+                  <pre id="old-text"></pre>
+                </div>
+                <div class="gh-diff-side gh-diff-added">
+                  <pre id="new-text"></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="gh-form-group mt-4">
+              <label class="gh-label" for="pr-description">Описание Pull Request</label>
+              <textarea id="pr-description" class="gh-textarea" readonly></textarea>
+            </div>
+
+            <!-- Кнопка применения локального фикса -->
+            <button id="apply-button" class="gh-btn gh-btn-primary mt-4" type="button">
+              <span>Применить изменение</span>
+              <span class="spinner" hidden></span>
+            </button>
+            <!-- Сюда выводится сообщение об успехе или ошибке применения -->
+            <p id="apply-message" class="gh-alert mt-2" role="alert" hidden></p>
+            
+            <p class="gh-text-muted text-sm mt-2">Изменение не будет применено без вашего нажатия. Резервные копии не создаются; для отката используйте Git.</p>
+
+            <!-- Блок Git (появляется после успешного применения) -->
+            <div id="git-actions" class="mt-4 pt-4 border-top" hidden>
+              <h2 class="text-lg font-semibold mb-3">Git</h2>
+              <div class="gh-form-group">
+                <label class="gh-label" for="pr-title">Заголовок Pull Request</label>
+                <input id="pr-title" class="gh-input" type="text" value="">
+              </div>
+              <button id="pr-button" class="gh-btn gh-btn-primary mt-3" type="button">
+                <span>Создать Pull Request</span>
+                <span class="spinner" hidden></span>
+              </button>
+              
+              <!-- Баннер успешного создания PR -->
+              <div id="pr-success-banner" class="gh-alert-success mt-3" hidden>
+                <svg class="octicon" viewBox="0 0 16 16" width="16" height="16" style="fill: currentColor; margin-right: 4px; vertical-align: text-bottom;"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm3.78-9.72a.75.75 0 00-1.06-1.06L6.75 9.19 4.28 6.72a.75.75 0 00-1.06 1.06l3 3a.75.75 0 001.06 0l4.5-4.5z"></path></svg>
+                <span>Pull Request успешно создан: <a href="#" id="pr-link" target="_blank" rel="noreferrer" class="gh-link">#0</a></span>
+              </div>
+
+              <p class="gh-text-muted text-sm mt-2">Агент создаст ветку, commit, push и PR.</p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+      
+      <p id="form-message" class="gh-alert" role="alert" hidden></p>
+      
+      <footer class="gh-footer">
+        <span>Qwen3 8B · Ollama</span>
+        <span>•</span>
+        <span>Данные не сохраняются</span>
+      </footer>
+      </main>
+    </div>
+    <script src="/static/app.js?v=20261125-rx-final"></script>
   </body>
 </html>
