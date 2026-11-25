@@ -60,23 +60,8 @@ def test_documentation_search_refreshes_changed_pages(tmp_path: Path) -> None:
 
 
 class _Model:
-    def __init__(self) -> None:
-        self.responses = iter(
-            [
-                AIMessage(
-                    content="",
-                    tool_calls=[
-                        {
-                            "name": "search_directum_documentation",
-                            "args": {"query": "BrokerNotAvailableException RabbitMQ"},
-                            "id": "docs-1",
-                            "type": "tool_call",
-                        }
-                    ],
-                ),
-                AIMessage(content="Справка подтверждает проверку доступности RabbitMQ."),
-            ]
-        )
+    def __init__(self, response: str) -> None:
+        self.responses = iter([AIMessage(content=response)])
         self.seen_messages = []
 
     def bind_tools(self, tools: list):
@@ -88,7 +73,7 @@ class _Model:
         return next(self.responses)
 
 
-def test_agent_uses_documentation_tool_when_model_selects_it(tmp_path: Path) -> None:
+def test_agent_automatically_retrieves_docs_and_rewrites_fake_link(tmp_path: Path) -> None:
     docs = tmp_path / "rx262"
     docs.mkdir()
     (docs / "rabbitmq.htm").write_text(
@@ -96,16 +81,46 @@ def test_agent_uses_documentation_tool_when_model_selects_it(tmp_path: Path) -> 
         "<body><div id='idcontent'><p>Проверьте доступность RabbitMQ.</p></div></body></html>",
         encoding="utf-8",
     )
-    model = _Model()
+    model = _Model(
+        "Обратитесь к документации: "
+        "[Документация Directum RX 26.2](https://rx262/)."
+    )
     settings = Settings(_env_file=None, directum_docs_path=docs)
 
     answer = analyze_log(
-        {"message": "BrokerNotAvailableException"},
+        {"message": "BrokerNotAvailableException RabbitMQ"},
         settings=settings,
         model_factory=lambda *_: model,
     )
 
-    assert "RabbitMQ" in answer
-    retrieved = str(model.seen_messages[1][-1].content)
-    assert "rx262/rabbitmq.htm" in retrieved
-    assert "Проверьте доступность RabbitMQ" in retrieved
+    prompt = str(model.seen_messages[0][1].content)
+    assert "Результаты автоматического поиска" in prompt
+    assert "rx262/rabbitmq.htm" in prompt
+    assert "Проверьте доступность RabbitMQ" in prompt
+    assert "https://rx262/" not in answer
+    assert "rx262/rabbitmq.htm" in answer
+    assert "Проверенные страницы локальной документации" in answer
+
+
+def test_agent_reports_no_match_instead_of_inventing_documentation_url(tmp_path: Path) -> None:
+    docs = tmp_path / "rx262"
+    docs.mkdir()
+    (docs / "unrelated.htm").write_text(
+        "<html><head><title>Общие правила</title></head>"
+        "<body><div id='idcontent'><p>Текст без совпадений.</p></div></body></html>",
+        encoding="utf-8",
+    )
+    model = _Model(
+        "Обратитесь к документации: "
+        "[Документация Directum RX 26.2](https://rx262/)."
+    )
+
+    answer = analyze_log(
+        {"message": "BrokerNotAvailableException RabbitMQ"},
+        settings=Settings(_env_file=None, directum_docs_path=docs),
+        model_factory=lambda *_: model,
+    )
+
+    assert "https://rx262/" not in answer
+    assert "подходящая страница в локальной документации не найдена" in answer
+    assert "Автоматический поиск по документации Directum RX 26.2 выполнен" in answer

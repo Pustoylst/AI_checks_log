@@ -17,6 +17,7 @@ import json
 import re
 from collections import Counter, deque
 from dataclasses import dataclass, field
+from io import StringIO
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -30,6 +31,11 @@ MAX_LINE_CHARS = 200_000
 MAX_TRACKED_SIGNATURES = 500
 MAX_ACTIVITY_KEYS = 5000
 MAX_SCAN_LINES = 5_000_000
+MAX_TRACKED_TRACE_IDS = 40
+MAX_TRACE_ERRORS_PER_ID = 2
+MAX_TRACE_BEFORE_LINES = 20
+MAX_TRACE_AFTER_LINES = 8
+MAX_TRACE_EVENTS_PER_CHAIN = 12
 
 ERROR_LEVELS = {"error", "fatal"}
 WARN_LEVELS = {"warn"}
@@ -81,6 +87,8 @@ class SignatureSummary:
     before: list[str] = field(default_factory=list)
     after: list[str] = field(default_factory=list)
     after_remaining: int = 0
+    trace_events: list[str] = field(default_factory=list)
+    trace_chain_truncated: bool = False
 
 
 @dataclass
@@ -104,6 +112,7 @@ class FileScan:
     last_ts: str = ""
     overflow_signatures: int = 0
     truncated: bool = False
+    trace_error_lines: dict[str, list[int]] = field(default_factory=dict)
 
 
 def _as_text(value: Any) -> str:
@@ -353,8 +362,154 @@ def _scan_jsonl(
 
         if level in INTERESTING_LEVELS:
             _record_signature(scan, obj, previous, pending_after, collect_context)
+            if collect_context and level in ERROR_LEVELS:
+                trace_id = _as_text(obj.get("tr"))
+                if trace_id:
+                    error_lines = scan.trace_error_lines.get(trace_id)
+                    if error_lines is None and len(scan.trace_error_lines) < MAX_TRACKED_TRACE_IDS:
+                        scan.trace_error_lines[trace_id] = [line_number]
+                    elif error_lines is not None:
+                        if len(error_lines) < MAX_TRACE_ERRORS_PER_ID:
+                            error_lines.append(line_number)
+                        else:
+                            error_lines[-1] = line_number
 
     return scan
+
+
+def _trace_chain_candidates_from_handle(
+    handle: TextIO,
+    trace_error_lines: dict[str, list[int]],
+) -> tuple[dict[str, list[str]], set[str]]:
+    """Collect bounded same-trace events from anywhere in a JSONL file."""
+
+    windows = {
+        trace_id: [
+            (
+                max(1, line_number - MAX_TRACE_BEFORE_LINES),
+                line_number + MAX_TRACE_AFTER_LINES,
+            )
+            for line_number in error_lines
+        ]
+        for trace_id, error_lines in trace_error_lines.items()
+    }
+    first_events: dict[str, list[tuple[int, str]]] = {trace_id: [] for trace_id in windows}
+    last_events: dict[str, deque[tuple[int, str]]] = {
+        trace_id: deque(maxlen=3) for trace_id in windows
+    }
+    matching_events: dict[str, dict[int, str]] = {trace_id: {} for trace_id in windows}
+    totals: Counter[str] = Counter()
+
+    for line_number, raw_line in enumerate(handle, start=1):
+        if line_number > MAX_SCAN_LINES:
+            break
+        line = raw_line.rstrip("\r\n")
+        if not line.strip() or len(line) > MAX_LINE_CHARS:
+            continue
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(obj, dict):
+            continue
+        trace_id = _as_text(obj.get("tr"))
+        if trace_id not in windows:
+            continue
+
+        totals[trace_id] += 1
+        compact = _compact_entry(obj)
+        if len(first_events[trace_id]) < 3:
+            first_events[trace_id].append((line_number, compact))
+        last_events[trace_id].append((line_number, compact))
+        if any(start <= line_number <= end for start, end in windows[trace_id]):
+            matching_events[trace_id][line_number] = compact
+
+    chains: dict[str, list[str]] = {}
+    truncated: set[str] = set()
+    for trace_id, error_lines in trace_error_lines.items():
+        candidates = dict(matching_events[trace_id])
+        candidates.update(first_events[trace_id])
+        candidates.update(last_events[trace_id])
+        if not candidates:
+            continue
+
+        priority_lines = (
+            [line for line, _ in first_events[trace_id]]
+            + error_lines
+            + [line for line, _ in last_events[trace_id]]
+        )
+        selected = set(priority_lines)
+        remaining = sorted(
+            candidates,
+            key=lambda line: (
+                min((abs(line - error_line) for error_line in error_lines), default=0),
+                line,
+            ),
+        )
+        for line in remaining:
+            if len(selected) >= MAX_TRACE_EVENTS_PER_CHAIN:
+                break
+            selected.add(line)
+        selected_lines = sorted(selected & candidates.keys())
+        chains[trace_id] = [candidates[line] for line in selected_lines]
+        if totals[trace_id] > len(selected_lines):
+            truncated.add(trace_id)
+    return chains, truncated
+
+
+def _attach_trace_chains_to_scan(
+    scan: FileScan,
+    chains: dict[str, list[str]],
+    truncated: set[str],
+) -> None:
+    for signature in scan.signatures.values():
+        if signature.level not in ERROR_LEVELS:
+            continue
+        for trace_id in signature.trace_ids:
+            if trace_id in chains:
+                signature.trace_events = chains[trace_id]
+                signature.trace_chain_truncated = trace_id in truncated
+                break
+
+
+def _attach_trace_chains(path: Path, encoding: str, scan: FileScan) -> None:
+    if not scan.trace_error_lines:
+        return
+    try:
+        with path.open("r", encoding=encoding, errors="replace") as handle:
+            chains, truncated = _trace_chain_candidates_from_handle(
+                handle, scan.trace_error_lines
+            )
+    except OSError as error:
+        raise LogPreprocessError(
+            f"Не удалось прочитать цепочку trace в логе: {error}"
+        ) from error
+    _attach_trace_chains_to_scan(scan, chains, truncated)
+
+
+def extract_trace_chains_from_text(text: str) -> dict[str, tuple[list[str], bool]]:
+    """Extract same-trace event chains from a bounded uploaded JSONL text log."""
+
+    rows = [line for line in text.splitlines() if line.strip()]
+    if len(rows) < 2:
+        return {}
+    for line in rows:
+        try:
+            if not isinstance(json.loads(line), dict):
+                return {}
+        except json.JSONDecodeError:
+            return {}
+
+    scan = _scan_jsonl(StringIO(text), "errors", collect_context=True, collect_activity=False)
+    if not scan.trace_error_lines:
+        return {}
+    chains, truncated = _trace_chain_candidates_from_handle(
+        StringIO(text), scan.trace_error_lines
+    )
+    return {
+        trace_id: (events, trace_id in truncated)
+        for trace_id, events in chains.items()
+    }
 
 
 def _text_level(line: str) -> str:
@@ -477,6 +632,11 @@ def _render_signature(index: int, signature: SignatureSummary) -> str:
         lines.append(f"- Период: {signature.first_ts or '?'} — {signature.last_ts or '?'}")
     if signature.trace_ids:
         lines.append(f"- Трассы: {', '.join(signature.trace_ids)}")
+    if signature.trace_events:
+        lines.append("- Цепочка событий того же trace ID (хронология по файлу):")
+        lines.extend(f"  - {_truncate(item, 350)}" for item in signature.trace_events)
+        if signature.trace_chain_truncated:
+            lines.append("  - Цепочка сокращена: не все события trace ID помещены в выжимку.")
 
     language, sample = _render_sample(signature)
     if sample:
@@ -683,6 +843,9 @@ def scan_file(
     except OSError as error:
         raise LogPreprocessError(f"Не удалось прочитать лог: {error}") from error
 
+    if is_jsonl and collect_context:
+        _attach_trace_chains(log_path, encoding, scan)
+
     scan.source = source_name or log_path.name
     scan.format = "jsonl" if is_jsonl else "text"
     scan.encoding = encoding
@@ -737,6 +900,16 @@ def preprocess_file(
         "warning_events": sum(item.count for item in warnings),
         "tracked_signatures": len(scan.signatures),
         "overflow_signatures": scan.overflow_signatures,
+        "traced_error_signatures": sum(
+            bool(item.trace_events)
+            for item in scan.signatures.values()
+            if item.level in ERROR_LEVELS
+        ),
+        "trace_chain_truncated": any(
+            item.trace_chain_truncated
+            for item in scan.signatures.values()
+            if item.level in ERROR_LEVELS
+        ),
         "report_chars": len(report),
         "focus": focus,
         "truncated": scan.truncated or report_truncated,

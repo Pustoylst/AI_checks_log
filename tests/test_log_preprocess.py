@@ -108,6 +108,67 @@ def test_preprocess_jsonl_groups_signatures_and_keeps_context(tmp_path) -> None:
     assert "License is invalid" in result.report
 
 
+def test_preprocess_collects_matching_trace_chain_across_unrelated_events(tmp_path) -> None:
+    path = tmp_path / "trace.log"
+    rows = [
+        {"t": "2026-11-03T10:00:00", "tr": "trace-A", "l": "Info", "lg": "WebServer", "mt": "request received"},
+        {"t": "2026-11-03T10:00:01", "tr": "trace-B", "l": "Info", "lg": "Worker", "mt": "unrelated trace"},
+    ]
+    rows.extend(
+        {"t": f"2026-11-03T10:00:{index + 2:02d}", "l": "Trace", "lg": "Noise", "mt": f"noise {index}"}
+        for index in range(7)
+    )
+    rows.extend(
+        [
+            {"t": "2026-11-03T10:00:09", "tr": "trace-A", "l": "Info", "lg": "IntegrationService", "mt": "calling RabbitMQ"},
+            {
+                "t": "2026-11-03T10:00:10",
+                "tr": "trace-A",
+                "l": "Error",
+                "lg": "IntegrationService",
+                "mt": "BrokerNotAvailableException",
+                "ex": {"type": "BrokerNotAvailableException", "m": "broker unavailable"},
+            },
+            {"t": "2026-11-03T10:00:11", "tr": "trace-A", "l": "Info", "lg": "WebServer", "mt": "request failed"},
+        ]
+    )
+    _jsonl(path, rows)
+
+    result = preprocess_file(path)
+
+    assert "Цепочка событий того же trace ID" in result.report
+    assert "request received" in result.report
+    assert "calling RabbitMQ" in result.report
+    assert "BrokerNotAvailableException" in result.report
+    assert "request failed" in result.report
+    assert "unrelated trace" not in result.report.split(
+        "- Цепочка событий того же trace ID", 1
+    )[1].split("- Пример записи", 1)[0]
+    assert result.stats["traced_error_signatures"] == 1
+    assert result.stats["trace_chain_truncated"] is False
+
+
+def test_trace_chain_report_marks_omitted_events(tmp_path) -> None:
+    path = tmp_path / "long-trace.log"
+    rows = [
+        {"t": f"2026-11-03T10:00:{index:02d}", "tr": "trace-long", "l": "Info", "lg": "Service", "mt": f"step {index}"}
+        for index in range(30)
+    ]
+    rows[25] = {
+        "t": "2026-11-03T10:00:25",
+        "tr": "trace-long",
+        "l": "Error",
+        "lg": "Service",
+        "mt": "failure",
+    }
+    _jsonl(path, rows)
+
+    result = preprocess_file(path)
+
+    assert result.stats["trace_chain_truncated"] is True
+    assert "Цепочка сокращена" in result.report
+
+
 def test_preprocess_respects_report_budget(tmp_path) -> None:
     path = tmp_path / "many-errors.log"
     rows = [

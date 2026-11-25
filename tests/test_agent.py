@@ -58,6 +58,41 @@ def test_agent_marks_preprocessed_report_as_excerpt() -> None:
     assert "не полный файл" in first_message
 
 
+def test_agent_extracts_trace_chain_from_uploaded_jsonl_text() -> None:
+    model = FakeModel([AIMessage(content="Причина найдена.")])
+    rows = [
+        '{"tr":"trace-A","l":"Info","lg":"WebServer","mt":"request received"}',
+        '{"tr":"trace-B","l":"Info","lg":"Worker","mt":"unrelated trace"}',
+    ]
+    rows.extend(
+        f'{{"tr":"trace-A","l":"Info","lg":"Service","mt":"step {index}"}}'
+        for index in range(15)
+    )
+    rows.extend(
+        [
+            '{"tr":"trace-A","l":"Error","lg":"IntegrationService","mt":"broker unavailable"}',
+            '{"tr":"trace-A","l":"Info","lg":"WebServer","mt":"request failed"}',
+        ]
+    )
+
+    analyze_log(
+        {"log_format": "text", "message": "\n".join(rows)},
+        settings=Settings(_env_file=None),
+        model_factory=lambda settings, model_name: model,
+    )
+
+    first_message = str(model.seen_messages[0][1].content)
+    assert "Цепочки событий с одинаковым trace ID" in first_message
+    assert "request received" in first_message
+    assert "broker unavailable" in first_message
+    assert "request failed" in first_message
+    assert "Цепочка сокращена" in first_message
+    trace_context = first_message.split(
+        "Цепочки событий с одинаковым trace ID", 1
+    )[1]
+    assert "unrelated trace" not in trace_context
+
+
 def test_local_failure_does_not_retry_cloud() -> None:
     import pytest
     calls = []

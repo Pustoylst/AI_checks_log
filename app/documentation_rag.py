@@ -24,6 +24,10 @@ _CHUNK_OVERLAP = 160
 _RESULT_COUNT = 5
 
 
+class DocumentationSearchError(RuntimeError):
+    """The documentation index could not be searched."""
+
+
 class _DocumentationHTMLParser(HTMLParser):
     """Extract page metadata and visible text from Help & Manual HTML."""
 
@@ -211,7 +215,7 @@ def _search_index(root_text: str, query: str) -> tuple[tuple[str, str, str], ...
     for word in _WORD_RE.findall(query.casefold()):
         if (len(word) >= 2 or word.isdigit()) and word not in _STOP_WORDS and word not in words:
             words.append(word)
-    words = words[:24]
+    words = words[:40]
     if not words:
         return ()
     match_query = " OR ".join(f'"{word}"' for word in words)
@@ -245,17 +249,39 @@ def build_documentation_tool(docs_root: str | Path):
 
         if not query.strip():
             raise ValueError("Поисковый запрос по документации не может быть пустым")
-        results = _search_index(str(root), query[:2000])
+        results = search_documentation(root, query)
         if not results:
             return "В документации Directum RX совпадений по этому запросу не найдено."
-
-        sections = []
-        for relative, title, content in results:
-            sections.append(
-                f"Источник: rx262/{relative}\n"
-                f"Раздел: {title}\n"
-                f"Фрагмент:\n{content}"
-            )
-        return "\n\n---\n\n".join(sections)
+        return format_documentation_results(results)
 
     return search_directum_documentation
+
+
+def search_documentation(
+    docs_root: str | Path,
+    query: str,
+) -> tuple[tuple[str, str, str], ...]:
+    """Search the local documentation index and return source path, title, and excerpt."""
+
+    root = Path(docs_root).expanduser().resolve()
+    try:
+        return _search_index(str(root), query[:2000])
+    except (OSError, sqlite3.Error) as error:
+        raise DocumentationSearchError(
+            f"Не удалось выполнить поиск по документации Directum RX: {error}"
+        ) from error
+
+
+def format_documentation_results(
+    results: tuple[tuple[str, str, str], ...],
+) -> str:
+    """Format retrieved excerpts with their exact local source paths."""
+
+    sections = []
+    for relative, title, content in results:
+        sections.append(
+            f"Источник: rx262/{relative}\n"
+            f"Раздел: {title[:240]}\n"
+            f"Фрагмент:\n{content}"
+        )
+    return "\n\n---\n\n".join(sections)
