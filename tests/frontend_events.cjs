@@ -45,6 +45,21 @@ async function check(storageBlocked) {
     },
   };
   vm.runInNewContext(source, context);
+  const markdown = context.renderMarkdown(
+    '# Анализ\n\n**Ошибка:** `BrokerNotAvailableException`\n\n' +
+    '- Причина: *RabbitMQ недоступен*\n' +
+    '- [Документация](https://example.test/help)\n\n' +
+    '```text\n<unsafe>\n```\n\n' +
+    '[опасная ссылка](javascript:alert(1))\n<img src=x onerror=alert(1)>',
+  );
+  assert.match(markdown, /<h1>Анализ<\/h1>/);
+  assert.match(markdown, /<strong>Ошибка:<\/strong>/);
+  assert.match(markdown, /<code>BrokerNotAvailableException<\/code>/);
+  assert.match(markdown, /<ul>[\s\S]*<li>Причина: <em>RabbitMQ недоступен<\/em><\/li>/);
+  assert.match(markdown, /href="https:\/\/example\.test\/help"/);
+  assert.match(markdown, /&lt;unsafe&gt;/);
+  assert.doesNotMatch(markdown, /href="javascript:/i);
+  assert.match(markdown, /&lt;img src=x onerror=alert\(1\)&gt;/);
   assert.equal(elements.get('#startup-message').hidden, true);
   elements.get('#repo-path').events.input();
   const preview = elements.get('#share-overview-preview-button');

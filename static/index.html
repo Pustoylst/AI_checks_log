@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Directum Log Analyzer</title>
-    <link rel="stylesheet" href="/static/styles.css?v=20261126-rx-ui">
+    <link rel="stylesheet" href="/static/styles.css?v=20261126-md-rendering">
   </head>
   <body>
     <!-- ВЕРХНЯЯ ШАПКА -->
@@ -44,7 +44,7 @@
             </span>
             <span class="rx-nav-text">
               <span class="rx-nav-title">Анализ лога</span>
-              <span class="rx-nav-subtitle">Разбор файла через Qwen3</span>
+              <span class="rx-nav-subtitle">Интеллектуальный разбор логов</span>
             </span>
           </a>
           <a href="#ci-section" class="gh-tab" data-rx-view-target="ci">
@@ -68,7 +68,7 @@
         </nav>
         <div class="rx-sidebar-info">
           <span class="rx-sidebar-info-kicker">Локальная модель</span>
-          <strong class="rx-sidebar-info-title">Qwen3 8B · Ollama</strong>
+          <strong class="rx-sidebar-info-title">ИИ-ассистент Directum</strong>
           <span class="rx-sidebar-info-note">Анализ выполняется на этом компьютере</span>
         </div>
       </aside>
@@ -92,9 +92,9 @@
           <div class="rx-home-hero">
             <span class="rx-home-eyebrow">Directum RX · Рабочий стол</span>
             <h1>Разбор инцидентов</h1>
-            <p>Автоматический анализ логов и CI/CD инцидентов с помощью локальной Qwen3 8B</p>
+            <p>Автоматический анализ логов и CI/CD инцидентов с помощью интеллектуального помощника</p>
             <div class="rx-home-chips">
-              <span class="rx-chip">Локальная модель Qwen3 8B</span>
+              <span class="rx-chip">ИИ-анализ на этом компьютере</span>
               <span class="rx-chip">Данные не покидают компьютер</span>
             </div>
           </div>
@@ -316,7 +316,7 @@
             <h2>Проверка изменения</h2>
           </div>
           <div class="gh-box-body">
-            <h3 id="proposal-explanation" class="gh-markdown-body" style="font-size: 16px; border:none; padding:0; margin-bottom: 8px;"></h3>
+            <div id="proposal-explanation" class="gh-markdown-body proposal-explanation"></div>
             <p class="gh-text-muted" id="proposal-path" style="margin-bottom: 16px;"></p>
             
             <div class="gh-diff-container">
@@ -377,12 +377,12 @@
       <p id="form-message" class="gh-alert" role="alert" hidden></p>
       
       <footer class="gh-footer">
-        <span>Qwen3 8B · Ollama</span>
+        <span>ИИ-ассистент Directum</span>
         <span>•</span>
         <span>Данные не сохраняются</span>
       </footer>
       </main>
     </div>
-    <script src="/static/app.js?v=20261126-rx-ui"></script>
+    <script src="/static/app.js?v=20261126-md-rendering"></script>
   </body>
 </html>

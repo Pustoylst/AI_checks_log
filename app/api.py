@@ -150,7 +150,7 @@ def ci_propose_fix_endpoint(run_id: int = Query(...), repo: str = Query(...)) ->
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
     except GitOperationError as error:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(error)) from None
-    except Exception as error:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Не удалось подготовить исправление: {error}") from None
 
 
@@ -196,11 +196,14 @@ async def analyze_endpoint(
     try:
         result = analyze_log(payload, repo_root=root)
     except TimeoutError:
-        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Ollama не ответил вовремя") from None
+        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Анализ не завершился вовремя. Повторите попытку.") from None
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
-    except Exception as error:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Ошибка локальной Ollama: {error}. Проверьте запуск Ollama и наличие модели: ollama pull qwen3:8b") from None
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Не удалось выполнить анализ. Проверьте доступность ИИ-сервиса и повторите попытку.",
+        ) from None
 
     return AnalyzeResponse(result=result)
 
@@ -336,13 +339,13 @@ def share_overview_analyze_endpoint(
     try:
         result = analyze_log(payload, repo_root=root, settings=settings)
     except TimeoutError:
-        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Ollama не ответил вовремя") from None
+        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Анализ не завершился вовремя. Повторите попытку.") from None
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
-    except Exception as error:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Ошибка локальной Ollama: {error}. Проверьте запуск Ollama и наличие модели: ollama pull qwen3:8b",
+            detail="Не удалось выполнить анализ. Проверьте доступность ИИ-сервиса и повторите попытку.",
         ) from None
     return AnalyzeResponse(result=result)
 
@@ -434,13 +437,13 @@ def share_analyze_endpoint(
     try:
         result = analyze_log(payload, repo_root=root, settings=settings)
     except TimeoutError:
-        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Ollama не ответил вовремя") from None
+        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="Анализ не завершился вовремя. Повторите попытку.") from None
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
     except Exception as error:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Ошибка локальной Ollama: {error}. Проверьте запуск Ollama и наличие модели: ollama pull qwen3:8b",
+            detail="Не удалось выполнить анализ. Проверьте доступность ИИ-сервиса и повторите попытку.",
         ) from None
     return ShareLogAnalyzeResponse(
         result=result,

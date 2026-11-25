@@ -75,14 +75,124 @@ repoPathInput.addEventListener("input", () => {
 // ==========================================================================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ==========================================================================
-// Local-only rendering: model output is text, never executable HTML.
-const hljs = { highlightAll() {} };
+function escapeHtml(text) {
+  return text.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character]);
+}
+
+function renderInlineMarkdown(text) {
+  const tokenPattern = /`([^`]+)`|\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)|(\*\*|__)(.+?)\5|(\*|_)(.+?)\7|~~(.+?)~~/g;
+  let html = "";
+  let lastIndex = 0;
+  let match;
+
+  while ((match = tokenPattern.exec(text)) !== null) {
+    html += escapeHtml(text.slice(lastIndex, match.index));
+    if (match[1]) {
+      html += `<code>${escapeHtml(match[1])}</code>`;
+    } else if (match[2]) {
+      const label = escapeHtml(match[2]);
+      if (/^(https?:\/\/|mailto:)/i.test(match[3])) {
+        const title = match[4] ? ` title="${escapeHtml(match[4])}"` : "";
+        html += `<a href="${escapeHtml(match[3])}" target="_blank" rel="noopener noreferrer"${title}>${label}</a>`;
+      } else {
+        html += label;
+      }
+    } else if (match[5]) {
+      html += `<strong>${renderInlineMarkdown(match[6])}</strong>`;
+    } else if (match[7]) {
+      html += `<em>${renderInlineMarkdown(match[8])}</em>`;
+    } else {
+      html += `<del>${renderInlineMarkdown(match[9])}</del>`;
+    }
+    lastIndex = tokenPattern.lastIndex;
+  }
+  return html + escapeHtml(text.slice(lastIndex));
+}
+
+function isMarkdownBlockStart(line) {
+  return /^\s*(```|#{1,6}\s|>\s?|[-*+]\s+|\d+[.)]\s+)|^\s*(?:(?:-\s*){3,}|(?:\*\s*){3,}|(?:_\s*){3,})$/.test(line);
+}
+
 function renderMarkdown(text) {
-    const node = document.createElement("pre");
-    node.style.whiteSpace = "pre-wrap";
-    node.style.font = "inherit";
-    node.textContent = text || "";
-    return node.outerHTML;
+  const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
+  const blocks = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index];
+    if (!line.trim()) {
+      index += 1;
+      continue;
+    }
+
+    const fence = line.match(/^\s*```([\w+-]*)\s*$/);
+    if (fence) {
+      const codeLines = [];
+      index += 1;
+      while (index < lines.length && !/^\s*```\s*$/.test(lines[index])) {
+        codeLines.push(lines[index]);
+        index += 1;
+      }
+      if (index < lines.length) index += 1;
+      const language = fence[1] ? ` class="language-${escapeHtml(fence[1])}"` : "";
+      blocks.push(`<pre><code${language}>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+      continue;
+    }
+
+    const heading = line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
+    if (heading) {
+      const level = heading[1].length;
+      blocks.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`);
+      index += 1;
+      continue;
+    }
+
+    if (/^\s*(?:(?:-\s*){3,}|(?:\*\s*){3,}|(?:_\s*){3,})$/.test(line)) {
+      blocks.push("<hr>");
+      index += 1;
+      continue;
+    }
+
+    if (/^\s*>/.test(line)) {
+      const quoteLines = [];
+      while (index < lines.length && /^\s*>/.test(lines[index])) {
+        quoteLines.push(lines[index].replace(/^\s*>\s?/, ""));
+        index += 1;
+      }
+      blocks.push(`<blockquote>${renderMarkdown(quoteLines.join("\n"))}</blockquote>`);
+      continue;
+    }
+
+    const listMatch = line.match(/^\s*(?:([-*+])\s+|(\d+)[.)]\s+)(.+)$/);
+    if (listMatch) {
+      const ordered = Boolean(listMatch[2]);
+      const items = [];
+      while (index < lines.length) {
+        const item = lines[index].match(/^\s*(?:([-*+])\s+|(\d+)[.)]\s+)(.+)$/);
+        if (!item || Boolean(item[2]) !== ordered) break;
+        items.push(`<li>${renderInlineMarkdown(item[3])}</li>`);
+        index += 1;
+      }
+      blocks.push(`<${ordered ? "ol" : "ul"}>${items.join("")}</${ordered ? "ol" : "ul"}>`);
+      continue;
+    }
+
+    const paragraph = [line.trim()];
+    index += 1;
+    while (index < lines.length && lines[index].trim() && !isMarkdownBlockStart(lines[index])) {
+      paragraph.push(lines[index].trim());
+      index += 1;
+    }
+    blocks.push(`<p>${renderInlineMarkdown(paragraph.join(" "))}</p>`);
+  }
+
+  return blocks.join("\n");
 }
 
 function setLoading(button, isLoading, loadingText = "") {
@@ -123,8 +233,7 @@ function showProposal(payload) {
   proposalExplanation.innerHTML = renderMarkdown(payload.explanation);
   proposalPath.textContent = `Файл: ${payload.path}`;
   oldText.textContent = payload.old_text;
-  newText.innerHTML = renderMarkdown(payload.new_text);
-  hljs.highlightAll();
+  newText.textContent = payload.new_text || "Исправление не предложено.";
   prDescription.value = payload.description || "Описание будет сформировано при создании Pull Request.";
   document.querySelector("#pr-title").value = `fix: ${payload.path}`;
   
@@ -394,7 +503,6 @@ form.addEventListener("submit", async (event) => {
       throw new Error(detail);
     }
     resultContent.innerHTML = renderMarkdown(payload.result);
-    hljs.highlightAll();
     resultTime.textContent = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
     resultPanel.hidden = false;
     proposalPanel.hidden = true;
@@ -660,8 +768,6 @@ ciScanButton.addEventListener("click", async () => {
       article.className = "ci-result";
       article.innerHTML = `<strong>${item.workflow || "CI"} · run ${item.run_id}</strong><a href="${item.url || "#"}" target="_blank" rel="noreferrer">Открыть workflow</a><p></p><button class="secondary-button ci-fix-button" type="button">Предложить исправление</button>`;
       article.querySelector("p").innerHTML = renderMarkdown(item.analysis);
-      // Обновляем подсветку синтаксиса
-      hljs.highlightAll();
       article.querySelector(".ci-fix-button").addEventListener("click", async () => {
         const button = article.querySelector(".ci-fix-button");
         button.disabled = true;

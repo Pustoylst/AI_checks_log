@@ -793,17 +793,58 @@ input[type="radio"]:focus-visible {
   border: 1px solid var(--gh-border-default); color: var(--gh-fg-default);
   white-space: pre-wrap;
 }
-.gh-markdown-body { font-family: var(--gh-font-sans); line-height: 1.6; }
-.gh-markdown-body h1, .gh-markdown-body h2, .gh-markdown-body h3 {
+.gh-markdown-body { font-family: var(--gh-font-sans); line-height: 1.65; overflow-wrap: anywhere; }
+.gh-markdown-body > :first-child { margin-top: 0; }
+.gh-markdown-body > :last-child { margin-bottom: 0; }
+.gh-markdown-body h1,
+.gh-markdown-body h2,
+.gh-markdown-body h3,
+.gh-markdown-body h4,
+.gh-markdown-body h5,
+.gh-markdown-body h6 {
   border-bottom: 1px solid var(--gh-border-muted); padding-bottom: 0.3em; margin-top: 24px; margin-bottom: 16px; font-weight: 600;
 }
+.gh-markdown-body h1 { font-size: 24px; }
 .gh-markdown-body h2 { font-size: 20px; }
 .gh-markdown-body h3 { font-size: 16px; }
+.gh-markdown-body h4,
+.gh-markdown-body h5,
+.gh-markdown-body h6 { font-size: 14px; }
 .gh-markdown-body p { margin-top: 0; margin-bottom: 16px; }
-.gh-markdown-body ul, .gh-markdown-body ol { padding-left: 2em; margin-bottom: 16px; }
-.gh-markdown-body pre { background-color: var(--gh-bg-inset); padding: 16px; border-radius: 6px; overflow: auto; }
-.gh-markdown-body code { font-family: var(--gh-font-mono); font-size: 85%; background-color: rgba(110,118,129,0.4); padding: 0.2em 0.4em; border-radius: 6px; }
-.gh-markdown-body pre code { background-color: transparent; padding: 0; }
+.gh-markdown-body ul,
+.gh-markdown-body ol { padding-left: 2em; margin-top: 0; margin-bottom: 16px; }
+.gh-markdown-body li + li { margin-top: 4px; }
+.gh-markdown-body blockquote {
+  margin: 0 0 16px;
+  padding: 2px 16px;
+  color: var(--gh-fg-muted);
+  border-left: 3px solid var(--gh-border-default);
+}
+.gh-markdown-body blockquote > :last-child { margin-bottom: 0; }
+.gh-markdown-body hr { height: 1px; margin: 24px 0; border: 0; background: var(--gh-border-muted); }
+.gh-markdown-body a { color: var(--gh-accent-emphasis); text-decoration: none; }
+.gh-markdown-body a:hover { text-decoration: underline; }
+.gh-markdown-body pre {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  overflow: auto;
+  color: var(--gh-fg-default);
+  background-color: var(--gh-bg-inset);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+  white-space: pre;
+}
+.gh-markdown-body code {
+  padding: 0.15em 0.4em;
+  color: var(--gh-fg-default);
+  background-color: var(--gh-bg-inset);
+  border: 1px solid var(--gh-border-muted);
+  border-radius: 4px;
+  font-family: var(--gh-font-mono);
+  font-size: 85%;
+}
+.gh-markdown-body pre code { padding: 0; background: transparent; border: 0; border-radius: 0; }
+.proposal-explanation { margin-bottom: 8px; color: var(--gh-fg-default); font-size: 16px; }
 
 /* --- РЕЗУЛЬТАТ АНАЛИЗА И ПРОВЕРКА ИЗМЕНЕНИЯ --- */
 #result-panel,
@@ -832,32 +873,9 @@ input[type="radio"]:focus-visible {
   border: 1px solid var(--gh-border-muted);
   border-radius: 6px;
   line-height: 1.65;
-  white-space: pre-wrap;
+  white-space: normal;
   word-break: break-word;
   overflow-wrap: anywhere;
-}
-#result-content > pre {
-  margin: 0;
-  padding: 0;
-  overflow: visible;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  font: inherit;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-#proposal-explanation {
-  color: var(--gh-fg-default);
-  line-height: 1.6;
-}
-#proposal-explanation > pre {
-  margin: 0;
-  padding: 0;
-  overflow: visible;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
 }
 #proposal-path {
   display: inline-block;
@@ -1120,15 +1138,6 @@ input[type="radio"]:focus-visible {
   line-height: 1.6;
 }
 #share-overview-analysis { background-color: var(--gh-bg-subtle); }
-#share-overview-report > pre,
-#share-overview-analysis > pre {
-  margin: 0;
-  padding: 0;
-  overflow: visible;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-}
 #share-message,
 #share-overview-message {
   padding: 10px 12px;
@@ -1238,14 +1247,6 @@ input[type="radio"]:focus-visible {
   border: 1px solid var(--gh-border-muted);
   border-radius: 6px;
   line-height: 1.6;
-}
-#share-result > pre {
-  margin: 0;
-  padding: 0;
-  overflow: visible;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
 }
 
 #share-overview-panel[hidden],

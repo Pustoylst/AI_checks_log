@@ -21,7 +21,9 @@ def test_frontend_is_served() -> None:
 
     assert response.status_code == 200
     assert "Разбор инцидентов" in response.text
-    assert "Qwen3 8B" in response.text
+    assert "Qwen" not in response.text
+    assert "Ollama" not in response.text
+    assert "ИИ-ассистент Directum" in response.text
     assert "Логи Directum" in response.text
     assert 'id="share-section"' in response.text
     assert "Показать выжимку" in response.text
@@ -39,6 +41,22 @@ def test_frontend_is_served() -> None:
     assert "/logs/share/preprocess" in script.text
     assert "/logs/share/overview" in script.text
     assert client.get("/static/styles.css").status_code == 200
+
+
+def test_analyze_error_does_not_expose_model_provider_or_name(monkeypatch) -> None:
+    def fail_analysis(*args, **kwargs):
+        raise RuntimeError("Ollama failed to load qwen3:8b")
+
+    monkeypatch.setattr("app.api.analyze_log", fail_analysis)
+    response = client.post(
+        "/analyze",
+        files={"file": ("log.json", json.dumps({"message": "ошибка"}), "application/json")},
+    )
+
+    assert response.status_code == 502
+    assert "Qwen" not in response.text
+    assert "Ollama" not in response.text
+    assert "ИИ-сервиса" in response.json()["detail"]
 
 
 def test_analyze_accepts_log_without_trace_id_or_repo_paths(monkeypatch) -> None:
