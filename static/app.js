@@ -23,6 +23,8 @@ const ciScanButton = document.querySelector("#ci-scan-button");
 const repoStatus = document.querySelector("#repo-status");
 const ciMessage = document.querySelector("#ci-message");
 const ciResults = document.querySelector("#ci-results");
+const ciProposalHost = document.querySelector("#ci-proposal-host");
+const analysisOutput = document.querySelector("#analysis-output");
 const gitActions = document.querySelector("#git-actions");
 const prButton = document.querySelector("#pr-button");
 const prSuccessBanner = document.querySelector("#pr-success-banner");
@@ -228,7 +230,7 @@ async function getRepositoryPath() {
 }
 
 
-function showProposal(payload) {
+function showProposal(payload, context = "analyze") {
   currentProposal = payload;
   proposalExplanation.innerHTML = renderMarkdown(payload.explanation);
   proposalPath.textContent = `Файл: ${payload.path}`;
@@ -238,8 +240,20 @@ function showProposal(payload) {
   document.querySelector("#pr-title").value = `fix: ${payload.path}`;
   
   if (applyMessage) applyMessage.hidden = true;
+
+  if (context === "ci" && ciProposalHost) {
+    // CI-предложение должно оставаться внутри раздела CI/CD, а не
+    // переезжать на страницу анализа лога.
+    ciProposalHost.appendChild(proposalPanel);
+  } else if (analysisOutput) {
+    analysisOutput.appendChild(resultPanel);
+    analysisOutput.appendChild(proposalPanel);
+    resultPanel.hidden = false;
+  } else {
+    resultPanel.hidden = false;
+  }
+
   proposalPanel.hidden = false;
-  resultPanel.hidden = false;
   proposalPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -781,15 +795,15 @@ ciScanButton.addEventListener("click", async () => {
           const proposal = await response.json();
           if (!response.ok) throw new Error(proposal.detail || "Не удалось подготовить исправление.");
           
-          showProposal(proposal);
+          showProposal(proposal, "ci");
           ciMessage.textContent = "Предложение готово к проверке.";
           ciMessage.style.color = "var(--gh-success-fg)";
-          fixBtn.textContent = "Готово";
+          button.textContent = "Готово";
         } catch (error) {
           ciMessage.textContent = error.message;
           ciMessage.style.color = "var(--gh-danger-fg)";
-          fixBtn.disabled = false;
-          fixBtn.textContent = "Предложить фикс";
+          button.disabled = false;
+          button.textContent = "Предложить исправление";
         }
       });
       

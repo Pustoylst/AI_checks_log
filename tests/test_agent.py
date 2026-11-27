@@ -15,7 +15,7 @@ class FakeModel:
         return self
 
     def invoke(self, messages):
-        self.seen_messages.append(messages)
+        self.seen_messages.append(list(messages))
         return next(self.responses)
 
 
@@ -54,8 +54,10 @@ def test_agent_marks_preprocessed_report_as_excerpt() -> None:
     )
 
     first_message = str(model.seen_messages[0][1].content)
+    system_message = str(model.seen_messages[0][0].content)
     assert "автоматическая выжимка" in first_message
     assert "не полный файл" in first_message
+    assert "только на русском языке" in system_message
 
 
 def test_agent_extracts_trace_chain_from_uploaded_jsonl_text() -> None:
@@ -106,6 +108,64 @@ def test_local_failure_does_not_retry_cloud() -> None:
     assert calls == ["qwen3:8b"]
 
 
+def test_agent_rewrites_english_analysis_as_russian() -> None:
+    model = FakeModel(
+        [
+            AIMessage(content="The test failed because the expected value was incorrect."),
+            AIMessage(content="Тест завершился ошибкой из-за неверного ожидаемого значения."),
+        ]
+    )
+
+    answer = analyze_log(
+        {"message": "assertion failed"},
+        settings=Settings(_env_file=None),
+        model_factory=lambda *_: model,
+    )
+
+    assert answer.startswith("Тест завершился ошибкой из-за неверного ожидаемого значения.")
+    assert "по-русски" in str(model.seen_messages[1][0].content)
+    assert model.seen_messages[1][1].content == "The test failed because the expected value was incorrect."
+
+
+def test_agent_rewrites_english_ci_analysis_as_russian() -> None:
+    model = FakeModel(
+        [
+            AIMessage(content="The CI job failed because the test expected 1 but got 9."),
+            AIMessage(content="CI-задание упало: тест ожидал 1, но получил 9."),
+        ]
+    )
+
+    answer = analyze_log(
+        {"run_id": 42, "ci_logs": "FAILED test_calculator.py::test_subtracts_numbers"},
+        settings=Settings(_env_file=None),
+        model_factory=lambda *_: model,
+    )
+
+    assert answer.startswith("CI-задание упало")
+    assert "по-русски" in str(model.seen_messages[1][0].content)
+    assert model.seen_messages[1][1].content == "The CI job failed because the test expected 1 but got 9."
+
+
+def test_agent_retries_translation_if_first_prompt_is_ignored() -> None:
+    model = FakeModel(
+        [
+            AIMessage(content="The test failed because the expected value was incorrect."),
+            AIMessage(content="The test failed because the expected value was incorrect."),
+            AIMessage(content="Тест завершился ошибкой из-за неверного ожидаемого значения."),
+        ]
+    )
+
+    answer = analyze_log(
+        {"message": "assertion failed"},
+        settings=Settings(_env_file=None),
+        model_factory=lambda *_: model,
+    )
+
+    assert answer.startswith("Тест завершился ошибкой из-за неверного ожидаемого значения.")
+    assert len(model.seen_messages) == 3
+    assert "Не повторяй английский" in str(model.seen_messages[2][0].content)
+
+
 def test_agent_proposes_exact_fix_after_reading_file(tmp_path: Path) -> None:
     (tmp_path / "service.py").write_text("TIMEOUT = 60\n", encoding="utf-8")
     model = FakeModel(
@@ -135,6 +195,119 @@ def test_agent_proposes_exact_fix_after_reading_file(tmp_path: Path) -> None:
     assert any("TIMEOUT = 60" in str(message.content) for message in model.seen_messages[1])
 
 
+def test_agent_retries_fix_with_russian_explanation(tmp_path: Path) -> None:
+    (tmp_path / "service.py").write_text("TIMEOUT = 60\n", encoding="utf-8")
+    model = FakeModel(
+        [
+            AIMessage(
+                content='{"path":"service.py","explanation":"Increase the timeout",'
+                '"old_text":"TIMEOUT = 60","new_text":"TIMEOUT = 120"}'
+            ),
+            AIMessage(
+                content='{"path":"service.py","explanation":"Увеличить таймаут",'
+                '"old_text":"TIMEOUT = 60","new_text":"TIMEOUT = 120"}'
+            ),
+        ]
+    )
+
+    proposal = propose_fix(
+        {"message": "request timeout", "file": "service.py"},
+        repo_root=tmp_path,
+        settings=Settings(_env_file=None),
+        model_factory=lambda settings, model_name: model,
+    )
+
+    assert proposal.explanation == "Увеличить таймаут"
+    assert "обязательно сформулируй на русском языке" in str(model.seen_messages[1][-1].content)
+
+
+def test_ci_fix_rejects_test_file_and_retries_with_source(tmp_path: Path) -> None:
+    (tmp_path / "calculator.py").write_text("return left + right\n", encoding="utf-8")
+    (tmp_path / "test_calculator.py").write_text("assert subtract(5, 4) == 1\n", encoding="utf-8")
+    model = FakeModel(
+        [
+            AIMessage(
+                content='{"path":"test_calculator.py","explanation":"Изменить ожидание теста",'
+                '"old_text":"assert subtract(5, 4) == 1","new_text":"assert subtract(5, 4) == 9"}'
+            ),
+            AIMessage(
+                content='{"path":"calculator.py","explanation":"Исправить операцию",'
+                '"old_text":"return left + right","new_text":"return left - right"}'
+            ),
+        ]
+    )
+
+    proposal = propose_fix(
+        {"run_id": 42, "ci_logs": "FAILED test_calculator.py::test_subtracts_numbers"},
+        repo_root=tmp_path,
+        settings=Settings(_env_file=None),
+        model_factory=lambda settings, model_name: model,
+    )
+
+    assert proposal.path == "calculator.py"
+    assert proposal.new_text == "return left - right"
+    assert len(model.seen_messages) == 2
+    correction = str(model.seen_messages[1][-1].content)
+    assert "Запрещено менять тесты" in correction
+    assert "не тесты" in correction
+
+
+def test_ci_fix_rejects_workflow_config(tmp_path: Path) -> None:
+    workflow = tmp_path / ".github" / "workflows" / "ci.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text("run: python -m pytest -q\n", encoding="utf-8")
+    (tmp_path / "calculator.py").write_text("return left + right\n", encoding="utf-8")
+    model = FakeModel(
+        [
+            AIMessage(
+                content='{"path":".github/workflows/ci.yml","explanation":"Добавить проверку стиля",'
+                '"old_text":"run: python -m pytest -q","new_text":"run: python -m flake8"}'
+            ),
+            AIMessage(
+                content='{"path":"calculator.py","explanation":"Исправить операцию",'
+                '"old_text":"return left + right","new_text":"return left - right"}'
+            ),
+        ]
+    )
+
+    proposal = propose_fix(
+        {"run_id": 42, "ci_logs": "FAILED test_calculator.py::test_subtracts_numbers"},
+        repo_root=tmp_path,
+        settings=Settings(_env_file=None),
+        model_factory=lambda settings, model_name: model,
+    )
+
+    assert proposal.path == "calculator.py"
+    assert "конфигурацию CI/CD" in str(model.seen_messages[1][-1].content)
+
+
+def test_ci_fix_uses_previous_analysis(tmp_path: Path) -> None:
+    (tmp_path / "calculator.py").write_text("return left + right\n", encoding="utf-8")
+    model = FakeModel(
+        [
+            AIMessage(
+                content='{"path":"calculator.py","explanation":"Исправить операцию",'
+                '"old_text":"return left + right","new_text":"return left - right"}'
+            )
+        ]
+    )
+
+    propose_fix(
+        {"run_id": 42, "ci_logs": "FAILED test_calculator.py::test_subtracts_numbers"},
+        repo_root=tmp_path,
+        settings=Settings(_env_file=None),
+        model_factory=lambda settings, model_name: model,
+        analysis="Функция subtract в calculator.py складывает аргументы вместо вычитания.",
+    )
+
+    assert any(
+        "Функция subtract в calculator.py" in str(message.content)
+        for message in model.seen_messages[0]
+    )
+    system_text = str(model.seen_messages[0][0].content)
+    assert "Не меняй тесты" in system_text or "Никогда не меняй тесты" in system_text
+
+
 def test_parse_fix_proposal_accepts_markdown_json() -> None:
     proposal = _parse_fix_proposal(
         "Вот предложение:\n```json\n"
@@ -144,6 +317,16 @@ def test_parse_fix_proposal_accepts_markdown_json() -> None:
 
     assert proposal.path == "calculator.py"
     assert proposal.new_text == "left - right"
+
+
+def test_parse_fix_proposal_extracts_json_surrounded_by_explanation() -> None:
+    proposal = _parse_fix_proposal(
+        'Here is the proposal:\n{"path":"calculator.py","explanation":"Исправить операцию",'
+        '"old_text":"left + right","new_text":"left - right"}\nDone.'
+    )
+
+    assert proposal.path == "calculator.py"
+    assert proposal.explanation == "Исправить операцию"
 
 
 def test_agent_normalizes_report_into_fix_proposal(tmp_path: Path) -> None:

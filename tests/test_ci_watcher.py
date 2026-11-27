@@ -1,8 +1,41 @@
 import json
 from pathlib import Path
+from urllib.error import HTTPError
 
-from app.ci_watcher import mark_fix_proposed, scan_failed_runs
+import pytest
+
+from app.ci_watcher import _github_request, mark_fix_proposed, scan_failed_runs
 from app.config import Settings
+from app.git_service import GitOperationError
+
+
+@pytest.mark.parametrize(
+    ("status", "expected"),
+    [
+        (401, "действителен, не истёк"),
+        (403, "Actions: Read"),
+        (404, "GITHUB_REPOSITORY"),
+    ],
+)
+def test_github_actions_http_errors_explain_configuration(
+    monkeypatch, status: int, expected: str
+) -> None:
+    settings = Settings(
+        _env_file=None,
+        github_token="do-not-expose-this-token",
+        github_repository="owner/repo",
+    )
+
+    def reject_request(request, timeout):
+        raise HTTPError(request.full_url, status, "Unauthorized", {}, None)
+
+    monkeypatch.setattr("app.ci_watcher.urlopen", reject_request)
+
+    with pytest.raises(GitOperationError) as exc_info:
+        _github_request(settings, "/actions/runs?status=failure")
+
+    assert expected in str(exc_info.value)
+    assert "do-not-expose-this-token" not in str(exc_info.value)
 
 
 def test_scan_failed_runs_analyzes_unseen_run_and_saves_state(monkeypatch, tmp_path: Path) -> None:

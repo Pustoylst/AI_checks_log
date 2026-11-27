@@ -40,7 +40,7 @@ def test_missing_path_retried_with_existing_file_context(tmp_path):
 
 
 def test_repeated_missing_path_rejected_without_creating_file(tmp_path):
-    model = Model([proposal("src/math_operations.py")] * 2)
+    model = Model([proposal("src/math_operations.py")] * 3)
     with pytest.raises(FixProposalError, match="отсутствует в репозитории"):
         propose_fix({}, tmp_path, Settings(_env_file=None), lambda *_: model)
     assert list(tmp_path.iterdir()) == []

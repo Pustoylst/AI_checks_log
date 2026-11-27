@@ -6,20 +6,29 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'static/index.html'), 'utf8');
 const source = fs.readFileSync(path.join(root, 'static/app.js'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'static/styles.css'), 'utf8');
+
+// The CI proposal panel lives outside the analyze view, so a body-class rule
+// that force-hides #proposal-panel would make "Предложение готово" invisible.
+assert.doesNotMatch(css, /body:not\(\.rx-view-analyze\)[^,{]*#proposal-panel/);
 
 async function check(storageBlocked) {
   const elements = new Map();
   function element() {
-    const text = { textContent: 'Кнопка' };
+    const text = {
+      textContent: 'Кнопка', events: {}, disabled: false,
+      addEventListener(name, fn) { this.events[name] = fn; },
+    };
     return {
       value: '', textContent: '', innerHTML: '', hidden: true, disabled: false,
-      dataset: {}, style: {}, events: {},
+      dataset: {}, style: {}, events: {}, children: [],
       querySelector: (selector) => selector === '.spinner' ? { hidden: true } : text,
       addEventListener(name, fn) { this.events[name] = fn; },
-      scrollIntoView() {}, append() {}, appendChild() {},
+      scrollIntoView() {}, append() {}, appendChild(child) { this.children.push(child); },
     };
   }
   for (const match of html.matchAll(/id="([^"]+)"/g)) elements.set('#' + match[1], element());
+  elements.get('#repo-path').value = 'C:\\repo';
   elements.get('#share-focus').value = 'errors';
   elements.get('#share-overview-limit').value = '0';
   const requests = [];
@@ -36,6 +45,26 @@ async function check(storageBlocked) {
     URLSearchParams, Date, console, setInterval, clearInterval,
     fetch: async (url, options) => {
       requests.push([url, options]);
+      if (url.startsWith('/ci/scan')) {
+        return {
+          ok: true,
+          json: async () => ({
+            count: 1,
+            results: [{ run_id: 42, workflow: 'Tests', url: 'https://example.test/run', analysis: 'Сбой теста' }],
+          }),
+        };
+      }
+      if (url.startsWith('/ci/propose-fix')) {
+        return {
+          ok: true,
+          json: async () => ({
+            path: 'calculator.py',
+            explanation: 'Исправить вычисление',
+            old_text: 'left + right',
+            new_text: 'left - right',
+          }),
+        };
+      }
       return {
         ok: !fail,
         json: async () => fail ? { detail: 'Папка недоступна' }
@@ -81,6 +110,20 @@ async function check(storageBlocked) {
   assert.equal(elements.get('#share-overview-message').textContent, 'Папка недоступна');
   assert.equal(preview.disabled, false);
   assert.equal(analyze.disabled, true);
+
+  elements.get('#repo-path').value = 'C:\\repo';
+  await elements.get('#ci-scan-button').events.click();
+  assert.match(requests[requests.length - 1][0], /\/ci\/scan\?/);
+  assert.equal(elements.get('#ci-results').children.length, 1, elements.get('#ci-message').textContent);
+  const article = elements.get('#ci-results').children[0];
+  const fixButton = article.querySelector('.ci-fix-button');
+  await fixButton.events.click();
+  assert.match(requests[requests.length - 1][0], /ci\/propose-fix\?run_id=42/);
+  assert.equal(fixButton.textContent, 'Готово');
+  assert.equal(elements.get('#ci-message').textContent, 'Предложение готово к проверке.');
+  assert.equal(elements.get('#ci-proposal-host').children.length, 1);
+  assert.equal(elements.get('#ci-proposal-host').children[0], elements.get('#proposal-panel'));
+  assert.equal(elements.get('#result-panel').hidden, true);
 }
 (async () => {
   await check(false);

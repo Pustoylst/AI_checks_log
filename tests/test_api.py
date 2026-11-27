@@ -161,7 +161,7 @@ def test_ci_propose_fix_uses_workflow_logs(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr("app.api.analyze_log", lambda log_data, repo_root, settings: "Полный CI-анализ")
     monkeypatch.setattr(
         "app.api.propose_fix",
-        lambda log_data, repo_root, settings: FixProposal(
+        lambda log_data, repo_root, settings, analysis=None: FixProposal(
             path="service.py", explanation="Исправить тест", old_text="old", new_text="new"
         ),
     )
@@ -176,7 +176,7 @@ def test_propose_fix_returns_reviewable_proposal(monkeypatch, tmp_path) -> None:
 
     monkeypatch.setattr(
         "app.api.propose_fix",
-            lambda log_data, repo_root, settings: FixProposal(
+            lambda log_data, repo_root, settings, analysis=None: FixProposal(
             path="service.py",
             explanation="Увеличить таймаут",
             old_text="TIMEOUT = 60",

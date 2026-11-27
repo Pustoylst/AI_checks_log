@@ -28,7 +28,27 @@ def _github_request(settings: Settings, path: str, accept: str = "application/vn
     try:
         with urlopen(request, timeout=30) as response:
             return response.read()
-    except (HTTPError, URLError, TimeoutError) as error:
+    except HTTPError as error:
+        if error.code == 401:
+            detail = (
+                "GitHub отклонил токен (401 Unauthorized). Проверьте, что GITHUB_TOKEN "
+                "действителен, не истёк и имеет доступ к GITHUB_REPOSITORY. После "
+                "изменения .env перезапустите приложение."
+            )
+        elif error.code == 403:
+            detail = (
+                "GitHub запретил чтение Actions API (403 Forbidden). Проверьте доступ "
+                "токена к GITHUB_REPOSITORY и разрешение Actions: Read."
+            )
+        elif error.code == 404:
+            detail = (
+                "GitHub не нашёл репозиторий или workflow runs. Проверьте "
+                "GITHUB_REPOSITORY и доступ токена к репозиторию."
+            )
+        else:
+            detail = f"GitHub вернул HTTP {error.code} при запросе Actions API."
+        raise GitOperationError(f"Ошибка запроса GitHub Actions: {detail}") from error
+    except (URLError, TimeoutError) as error:
         raise GitOperationError(f"Ошибка запроса GitHub Actions: {error}") from error
 
 

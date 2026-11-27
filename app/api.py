@@ -130,7 +130,7 @@ def ci_propose_fix_endpoint(run_id: int = Query(...), repo: str = Query(...)) ->
         logs = _run_logs(settings, run_id)
         log_data = {"run_id": run_id, "ci_logs": logs}
         analysis = analyze_log(log_data, repo_root=root, settings=settings)
-        proposal = propose_fix(log_data, root, settings=settings)
+        proposal = propose_fix(log_data, root, settings=settings, analysis=analysis)
         proposal.analysis = analysis
         proposal.run_id = run_id
         proposal.description = build_pull_request_body(
@@ -150,7 +150,7 @@ def ci_propose_fix_endpoint(run_id: int = Query(...), repo: str = Query(...)) ->
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from None
     except GitOperationError as error:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(error)) from None
-    except Exception:
+    except Exception as error:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Не удалось подготовить исправление: {error}") from None
 
 
@@ -470,7 +470,7 @@ async def propose_fix_endpoint(
         settings = get_settings()
         log_data = payload
         analysis = analyze_log(log_data, repo_root=root, settings=settings)
-        proposal = propose_fix(log_data, root, settings=settings)
+        proposal = propose_fix(log_data, root, settings=settings, analysis=analysis)
         proposal.analysis = analysis
         proposal.description = build_pull_request_body(
             proposal.path, proposal.explanation, proposal.old_text, proposal.new_text, analysis=proposal.analysis

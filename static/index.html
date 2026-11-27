@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Directum Log Analyzer</title>
-    <link rel="stylesheet" href="/static/styles.css?v=20261126-md-rendering">
+    <link rel="stylesheet" href="/static/styles.css?v=20261127-ci-proposal-visible">
   </head>
   <body>
     <!-- ВЕРХНЯЯ ШАПКА -->
@@ -172,6 +172,7 @@
             <p id="ci-message" class="gh-alert" role="alert" hidden></p>
             <pre id="repo-status" class="gh-code-block" hidden></pre>
             <div id="ci-results" class="ci-results" hidden></div>
+            <div id="ci-proposal-host" class="mt-4"></div>
           </div>
         </section>
 
@@ -293,6 +294,8 @@
           </div>
         </section>
 
+        <!-- БЛОК 4-5: Результаты анализа и проверка исправления -->
+        <div id="analysis-output" data-rx-view="analyze" hidden>
         <!-- БЛОК 4: Результат анализа -->
         <section id="result-panel" class="gh-box mt-4" hidden>
           <div class="gh-box-header flex-between">
@@ -371,6 +374,7 @@
             </div>
           </div>
         </section>
+        </div>
 
       </div>
       
@@ -383,6 +387,6 @@
       </footer>
       </main>
     </div>
-    <script src="/static/app.js?v=20261126-md-rendering"></script>
+    <script src="/static/app.js?v=20261127-ci-proposal-visible"></script>
   </body>
 </html>

@@ -268,9 +268,10 @@ body {
 }
 .rx-breadcrumb-back[hidden] { display: none !important; }
 
-/* Панели результата и diff относятся только к экрану «Анализ». */
-body:not(.rx-view-analyze) #result-panel,
-body:not(.rx-view-analyze) #proposal-panel { display: none !important; }
+/* Видимость панелей результата и diff управляется атрибутом hidden и
+   обёрткой #analysis-output (data-rx-view="analyze"). Панель предложения
+   также может отображаться в разделе CI/CD, поэтому жёсткого скрытия
+   по классу экрана здесь нет. */
 
 /* --- ГЛАВНЫЙ ЭКРАН «РАБОЧИЙ СТОЛ» --- */
 .rx-home-hero {

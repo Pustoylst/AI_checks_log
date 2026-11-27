@@ -112,7 +112,7 @@ CLI:
 
 ## Необязательный GitHub
 
-В `.env`: `GITHUB_TOKEN`, `GITHUB_REPOSITORY=owner/repository`, `GITHUB_DEFAULT_BRANCH=main`. Не публикуйте `.env`. Права токена: Actions Read, Contents Read and write, Pull requests Read and write. Сеть используется только при явных действиях GitHub. CI watcher:
+В `.env`: `GITHUB_TOKEN`, `GITHUB_REPOSITORY=owner/repository`, `GITHUB_DEFAULT_BRANCH=main`. Не публикуйте `.env`. Для fine-grained token разрешите доступ к нужному репозиторию и права Checks: Read (кнопка «Проверить CI»), Actions: Read (список упавших workflow и их логи), Contents: Read and write и Pull requests: Read and write (создание PR). После изменения `.env` перезапустите приложение. Сеть используется только при явных действиях GitHub. CI watcher:
 
 ```bat
 .venv\Scripts\python.exe -m tools.watch_ci --repo C:\путь\к\репозиторию --once

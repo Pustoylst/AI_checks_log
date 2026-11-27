@@ -29,8 +29,8 @@ def test_inexact_proposal_is_retried_with_actual_source(tmp_path):
     source = tmp_path / "a.py"
     source.write_text("return left + right\n", encoding="utf-8")
     model = Model([
-        '{"path":"a.py","explanation":"fix","old_text":"return a + b","new_text":"return a - b"}',
-        '{"path":"a.py","explanation":"fix","old_text":"return left + right","new_text":"return left - right"}',
+        '{"path":"a.py","explanation":"Исправить вычисление","old_text":"return a + b","new_text":"return a - b"}',
+        '{"path":"a.py","explanation":"Исправить вычисление","old_text":"return left + right","new_text":"return left - right"}',
     ])
     proposal = propose_fix({}, tmp_path, Settings(_env_file=None), lambda *_: model)
     assert proposal.old_text == "return left + right"
@@ -41,8 +41,8 @@ def test_inexact_proposal_is_retried_with_actual_source(tmp_path):
 def test_repeated_inexact_proposal_is_rejected_without_writing(tmp_path):
     source = tmp_path / "a.py"
     source.write_text("original\n", encoding="utf-8")
-    invalid = '{"path":"a.py","explanation":"fix","old_text":"invented","new_text":"replacement"}'
-    model = Model([invalid, invalid])
+    invalid = '{"path":"a.py","explanation":"Исправить вычисление","old_text":"invented","new_text":"replacement"}'
+    model = Model([invalid, invalid, invalid])
     with pytest.raises(ValueError, match="точную безопасную замену: old_text не совпадает"):
         propose_fix({}, tmp_path, Settings(_env_file=None), lambda *_: model)
     assert source.read_text(encoding="utf-8") == "original\n"
